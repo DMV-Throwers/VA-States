@@ -357,21 +357,21 @@ export default function RegisterPage() {
                 {
                   code: '1A' as Division,
                   name: '1A — Single String',
-                  price: '$25',
+                  price: '$30',
                   desc: 'Classic 1-string freestyle. 2-minute routine, judged on technical execution plus trick presentation, performance quality, musicality, and routine construction.',
                   format: '2 min · Scored judging',
                 },
                 {
                   code: 'X' as Division,
                   name: 'X Division',
-                  price: '$20',
+                  price: '$25',
                   desc: 'Non-1A styles: 2A (looping), 3A (two strings), 4A (offstring), or 5A (freehand). Pick one.',
                   format: '2 min · Scored judging',
                 },
                 {
                   code: 'SBJ' as Division,
                   name: 'Sport / Beginner / Junior',
-                  price: '$15',
+                  price: '$20',
                   desc: 'Open to all skill levels and ages. Relaxed format, simplified judging, great entry point.',
                   format: '90 sec · Simplified scoring',
                 },
@@ -441,7 +441,7 @@ export default function RegisterPage() {
             {/* Combo note */}
             {watchedDivisions.includes('1A') && watchedDivisions.includes('X') && (
               <div className="mt-3 p-3 border border-gold/40 bg-navy text-xs text-gold font-semibold">
-                ★ 1A + X Division combo: $40 (saves $5 vs. registering separately)
+                ★ 1A + X Division combo: $50 (saves $5 vs. registering separately)
               </div>
             )}
 
@@ -787,7 +787,7 @@ export default function RegisterPage() {
                   {watchedDivisions.map(d => (
                     <div key={d} className="flex justify-between text-sm">
                       <span className="text-text-body">{d === 'SBJ' ? 'Sport/Beginner/Junior' : d}</span>
-                      <span className="text-white font-semibold">{formatCents({ '1A': 2500, 'X': 2000, 'SBJ': 1500 }[d] ?? 0)}</span>
+                      <span className="text-white font-semibold">{formatCents({ '1A': 3000, 'X': 2500, 'SBJ': 2000 }[d] ?? 0)}</span>
                     </div>
                   ))}
                 </div>
