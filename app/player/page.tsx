@@ -112,7 +112,7 @@ export default function PlayerPortalPage() {
     }
   }
 
-  const deadlineLabel = useMemo(() => 'September 12, 2026', []);
+  const deadlineLabel = useMemo(() => 'September 17, 2026', []);
 
   async function loadProfile(token: string) {
     const res = await fetch('/api/player/me', {

@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   if (error || !data) return NextResponse.json({ message: 'Registration not found' }, { status: 404 });
 
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://register.dmvthrowers.club';
-  const musicDeadline = new Date(process.env.MUSIC_DEADLINE_ISO ?? '2026-09-12T23:59:59-04:00');
+  const musicDeadline = new Date(process.env.MUSIC_DEADLINE_ISO ?? '2026-09-17T23:59:59-04:00');
   const canUploadMusic = data.paid || data.fee_cents === 0;
 
   return NextResponse.json({

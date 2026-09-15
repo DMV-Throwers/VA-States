@@ -832,7 +832,7 @@ export default function RegisterPage() {
 
             <div className="mt-4 pt-4 border-t border-navy-border">
               <div className="text-xs font-black tracking-caps text-gold mb-2">MUSIC DEADLINE</div>
-              <p className="text-xs text-text-body">Upload your music in this registration app after payment. <strong className="text-white">Deadline: Sept 12, 2026.</strong></p>
+              <p className="text-xs text-text-body">Upload your music in this registration app after payment. <strong className="text-white">Deadline: Sept 17, 2026.</strong></p>
               <p className="text-xs text-text-body mt-2">Music must be appropriate for all audiences — no explicit language, sexual content, or glorification of violence. <strong className="text-white">Inappropriate music results in disqualification.</strong> Full rules are on the upload page.</p>
             </div>
 
@@ -842,7 +842,7 @@ export default function RegisterPage() {
                 {[
                   { n: '1', label: 'Submit this form', sub: 'You\'re in the queue' },
                   { n: '2', label: 'Complete Stripe checkout', sub: 'Secure online payment in portal' },
-                  { n: '3', label: 'Upload your music', sub: 'In-app upload · due Sept 12' },
+                  { n: '3', label: 'Upload your music', sub: 'In-app upload · due Sept 17' },
                   { n: '4', label: 'Show up Sept 19', sub: 'Dulles Town Center, Sterling VA' },
                 ].map(({ n, label, sub }) => (
                   <li key={n} className="flex items-start gap-2.5">
