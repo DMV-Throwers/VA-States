@@ -67,9 +67,9 @@ export const POST = withErrorHandling(async (requestId, req: NextRequest) => {
   }
 
   // Check music deadline
-  const deadline = new Date(process.env.MUSIC_DEADLINE_ISO ?? '2026-09-12T23:59:59-04:00');
+  const deadline = new Date(process.env.MUSIC_DEADLINE_ISO ?? '2026-09-17T23:59:59-04:00');
   if (new Date() > deadline) {
-    return apiError('unprocessable', 'Music upload deadline has passed (September 12, 2026)', requestId);
+    return apiError('unprocessable', 'Music upload deadline has passed (September 17, 2026)', requestId);
   }
 
   const primaryDivision = reg.divisions[0] as string;

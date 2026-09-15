@@ -2,9 +2,9 @@ export type Division = '1A' | 'X' | 'SBJ';
 export type RegistrationSource = 'online' | 'late_email' | 'walk_up' | 'soft_launch';
 
 const BASE_PRICE: Record<Division, number> = {
-  '1A': 2500,
-  'X':  2000,
-  'SBJ': 1500,
+  '1A': 3000,
+  'X':  2500,
+  'SBJ': 2000,
 };
 
 export interface FeeResult {
@@ -24,7 +24,7 @@ export interface FeeResult {
  *    less still goes through Stripe checkout for the reduced amount. A comp
  *    code supersedes early-bird and walk-up modifiers rather than stacking
  *    with them.
- * 2. Combo discount (1A + X together = $40 instead of $45)
+ * 2. Combo discount (1A + X together = $50 instead of $55)
  * 3. Early bird (before EARLY_BIRD_CUTOFF_ISO) → -$5, floor at $0
  * 4. Walk-up / late-email → +$10
  */
@@ -40,7 +40,7 @@ export function calculateFee(
   const combo_applied = has1A && hasX;
 
   const baseFee = combo_applied
-    ? 4000 + (hasSBJ ? 1500 : 0)
+    ? 5000 + (hasSBJ ? 2000 : 0)
     : divisions.reduce((sum, d) => sum + BASE_PRICE[d], 0);
 
   if (compDiscountPercent > 0) {
@@ -77,7 +77,7 @@ export function calculateFee(
   };
 }
 
-/** Dollar string for display: 2500 → "$25.00" */
+/** Dollar string for display: 3000 → "$30.00" */
 export function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
@@ -96,7 +96,7 @@ export function calculateFeePreview(
   const combo_applied = has1A && hasX;
 
   const baseFee = combo_applied
-    ? 4000 + (hasSBJ ? 1500 : 0)
+    ? 5000 + (hasSBJ ? 2000 : 0)
     : divisions.reduce((sum, d) => sum + BASE_PRICE[d], 0);
 
   if (compDiscountPercent > 0) {

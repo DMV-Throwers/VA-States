@@ -7,7 +7,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://register.dmvthrowe
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: 'Register · VSYC-26 · Virginia State Yo-Yo Contest 2026',
-  description: 'Competitor registration for VSYC-26 — September 19, 2026 · Dulles Town Center · Sterling, VA. 1A: $25, X Division: $20, Sport/Beginner/Junior: $15.',
+  description: 'Competitor registration for VSYC-26 — September 19, 2026 · Dulles Town Center · Sterling, VA. 1A: $30, X Division: $25, Sport/Beginner/Junior: $20.',
   alternates: { canonical: '/' },
   openGraph: {
     title: 'Register · VSYC-26',

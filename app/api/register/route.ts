@@ -53,7 +53,7 @@ export const POST = withErrorHandling(async (requestId, req: NextRequest) => {
   if (!onlineRegistrationOpen) {
     return apiError('unprocessable', 'Online registration is currently paused. Please try again later.', requestId);
   }
-  const onlineCutoff = new Date(process.env.ONLINE_REG_CUTOFF_ISO ?? '2026-09-12T23:59:59-04:00');
+  const onlineCutoff = new Date(process.env.ONLINE_REG_CUTOFF_ISO ?? '2026-09-17T23:59:59-04:00');
   if (now > onlineCutoff) {
     return apiError('unprocessable', 'Online registration has closed. Contact dmvthrowers@gmail.com for late entry.', requestId);
   }
@@ -86,9 +86,9 @@ export const POST = withErrorHandling(async (requestId, req: NextRequest) => {
   const feeResult = calculateFee(data.divisions as Division[], compDiscountPercent, now, source);
   const xSubstyles = data.x_substyles?.length ? data.x_substyles.join(', ') : null;
 
-  // 7. Generate music upload token (expires Sept 12 23:59 ET)
+  // 7. Generate music upload token (expires Sept 17 23:59 ET)
   const musicUploadToken = generateToken(32);
-  const musicDeadline = new Date(process.env.MUSIC_DEADLINE_ISO ?? '2026-09-12T23:59:59-04:00');
+  const musicDeadline = new Date(process.env.MUSIC_DEADLINE_ISO ?? '2026-09-17T23:59:59-04:00');
 
   // Minors are private-by-default and don't get public-profile fields stored,
   // regardless of what the client sent — enforced server-side so it can't be

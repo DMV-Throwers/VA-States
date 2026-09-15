@@ -221,7 +221,7 @@ function buildConfirmationHtml(p: ConfirmationParams, fee: string): string {
     ${p.musicUploadUrl ? `
     <div style="background:#0d1428;border-left:4px solid #C9A84C;padding:20px;margin-bottom:16px;">
       <div style="font-size:0.6rem;letter-spacing:0.16em;color:#C9A84C;font-weight:800;margin-bottom:12px;">MUSIC UPLOAD</div>
-      <p style="font-size:0.85rem;margin:0 0 12px;">Upload your music using the secure link below. <strong style="color:#fff;">Deadline: September 12, 2026.</strong></p>
+      <p style="font-size:0.85rem;margin:0 0 12px;">Upload your music using the secure link below. <strong style="color:#fff;">Deadline: September 17, 2026.</strong></p>
       <a href="${p.musicUploadUrl}" style="display:inline-block;background:#C9A84C;color:#0d1428;font-weight:800;font-size:0.78rem;letter-spacing:0.1em;padding:12px 24px;text-decoration:none;">UPLOAD MUSIC →</a>
       <p style="font-size:0.75rem;margin:12px 0 0;color:#6a7a9a;">Format: DIVISION_LastName_FirstName.mp3 — the system will rename it automatically.</p>
       <p style="font-size:0.75rem;margin:8px 0 0;color:#6a7a9a;">Music must be appropriate for all audiences — no explicit language, sexual content, or glorification of violence. <strong style="color:#fff;">Inappropriate music results in disqualification.</strong> Full rules are on the upload page.</p>
@@ -229,7 +229,7 @@ function buildConfirmationHtml(p: ConfirmationParams, fee: string): string {
     ` : `
     <div style="background:#0d1428;border-left:4px solid #C9A84C;padding:20px;margin-bottom:16px;">
       <div style="font-size:0.6rem;letter-spacing:0.16em;color:#C9A84C;font-weight:800;margin-bottom:12px;">MUSIC UPLOAD</div>
-      <p style="font-size:0.85rem;margin:0;">Music upload unlocks in your registration portal after payment is received. <strong style="color:#fff;">Deadline: September 12, 2026.</strong></p>
+      <p style="font-size:0.85rem;margin:0;">Music upload unlocks in your registration portal after payment is received. <strong style="color:#fff;">Deadline: September 17, 2026.</strong></p>
       <p style="font-size:0.75rem;margin:8px 0 0;color:#6a7a9a;">Start picking your track now: it must be appropriate for all audiences — no explicit language, sexual content, or glorification of violence. <strong style="color:#fff;">Inappropriate music results in disqualification.</strong> Full rules are on the upload page.</p>
     </div>
     `}
@@ -292,7 +292,7 @@ function buildMusicReceivedHtml(p: MusicReceivedParams): string {
       <div style="font-size:0.85rem;margin-bottom:6px;"><strong style="color:#fff;">Division:</strong> ${esc(p.division)}</div>
       <div style="font-size:0.85rem;"><strong style="color:#fff;">File saved as:</strong> <span style="font-family:monospace;color:#C9A84C;">${esc(p.filename)}</span></div>
     </div>
-    <p style="font-size:0.82rem;color:#6a7a9a;">Music deadline was September 12, 2026. You're all set. See you at Dulles Town Center on September 19.</p>
+    <p style="font-size:0.82rem;color:#6a7a9a;">Music deadline was September 17, 2026. You're all set. See you at Dulles Town Center on September 19.</p>
   `);
 }
 
@@ -323,7 +323,7 @@ function buildPaymentReminderHtml(p: PaymentReminderParams): string {
       <a href="${p.confirmUrl}" style="display:inline-block;background:#C9A84C;color:#0d1428;font-weight:800;font-size:0.78rem;letter-spacing:0.1em;padding:10px 20px;text-decoration:none;margin-top:6px;">PAY NOW →</a>
       <p style="font-size:0.75rem;margin:10px 0 0;color:#6a7a9a;">Day-of alternatives may be available at the registration desk.</p>
     </div>
-    <p style="font-size:0.82rem;color:#6a7a9a;">Registration closes September 12. Unpaid registrations may be released after that date. Questions? Reply to this email.</p>
+    <p style="font-size:0.82rem;color:#6a7a9a;">Registration closes September 17. Unpaid registrations may be released after that date. Questions? Reply to this email.</p>
   `);
 }
 
