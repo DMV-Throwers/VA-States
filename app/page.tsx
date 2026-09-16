@@ -253,7 +253,10 @@ export default function RegisterPage() {
         <div className="max-w-5xl mx-auto relative">
           <span className="inline-block bg-gold text-navy-deep text-xs font-black tracking-widest px-3 py-1 mb-3">VSYC-26</span>
           <h1 className="font-display font-black text-4xl text-gold mb-2">Register to Compete</h1>
-          <p className="text-xs tracking-widest text-white/70 font-semibold uppercase">Virginia State Yo-Yo Contest, brought to you by Goodles · September 19, 2026 · Sterling, VA</p>
+          <p className="text-xs tracking-widest text-white/70 font-semibold uppercase">
+            <span className="hidden sm:inline">Virginia State Yo-Yo Contest, brought to you by Goodles · September 19, 2026 · Sterling, VA</span>
+            <span className="sm:hidden">VA State Yoyo × Goodles · Sept 19, 2026</span>
+          </p>
           <div className="flex items-center gap-2 mt-3">
             <span className="text-[0.6rem] tracking-widest text-white/50 font-semibold uppercase">Presented by</span>
             <Image
