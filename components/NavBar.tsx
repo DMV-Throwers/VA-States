@@ -69,7 +69,7 @@ export default function NavBar({ activePage }: NavBarProps) {
       {/* Top bar — gold strip matching UI kit #top-bar */}
       <div className="bg-gold px-3 py-1.5 flex justify-between items-center gap-3 flex-wrap md:px-6">
         <span className="font-condensed text-[0.62rem] md:text-[0.72rem] text-navy-deep tracking-caps font-extrabold uppercase">
-          VSYC-26 · SEPT 19, 2026 · DULLES TOWN CENTER · STERLING VA
+          VSYC-26 · BROUGHT TO YOU BY GOODLES · SEPT 19, 2026 · DULLES TOWN CENTER · STERLING VA
         </span>
         <a
           href="https://dmvthrowers.club/vsyc26-sponsors.html"
@@ -99,6 +99,18 @@ export default function NavBar({ activePage }: NavBarProps) {
               <div className="font-condensed text-[0.55rem] tracking-widest text-gold font-bold uppercase truncate">
                 Virginia State Yo-Yo Contest
               </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 pl-2 ml-1 border-l border-navy-border flex-shrink-0">
+              <span className="font-condensed text-[0.5rem] tracking-widest text-text-muted uppercase leading-none">
+                Presented<br/>by
+              </span>
+              <Image
+                src="https://dmvthrowers.club/assets/images/logos/goodles.png"
+                alt="Goodles"
+                width={56}
+                height={19}
+                className="object-contain flex-shrink-0"
+              />
             </div>
           </a>
 
