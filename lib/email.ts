@@ -1,0 +1,351 @@
+import { Resend } from 'resend';
+import { buildVsyc26Ics } from './ics';
+
+let resendClient: Resend | null = null;
+
+function canSendEmail(): boolean {
+  return Boolean(process.env.RESEND_API_KEY);
+}
+
+function getResend() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error('RESEND_API_KEY not set');
+  if (!resendClient) resendClient = new Resend(key);
+  return resendClient;
+}
+
+const FROM = `${process.env.RESEND_FROM_NAME ?? 'VSYC-26 Registration'} <${process.env.RESEND_FROM_EMAIL ?? 'vastateyoyocontest@dmvthrowers.club'}>`;
+const REPLY_TO = process.env.RESEND_REPLY_TO ?? 'dmvthrowers@gmail.com';
+
+export type EmailResult = { ok: true } | { ok: false; error: string };
+
+/** Escape registrant-supplied values before interpolating into email HTML. */
+function esc(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+interface ConfirmationParams {
+  to: string;
+  firstName: string;
+  lastName: string;
+  divisions: string[];
+  feeCents: number;
+  isComp: boolean;
+  confirmUrl: string;
+  musicUploadUrl?: string;
+  registrationId: string;
+  /** Set true when resending to a registrant who has already paid, so the email doesn't ask for payment again. */
+  alreadyPaid?: boolean;
+}
+
+export async function sendConfirmationEmail(p: ConfirmationParams): Promise<EmailResult> {
+  if (!canSendEmail()) return { ok: false, error: 'resend_not_configured' };
+  try {
+    const resend = getResend();
+    const fee = p.isComp ? 'FREE (comp pass)' : `$${(p.feeCents / 100).toFixed(2)}`;
+    const ics = buildVsyc26Ics({
+      uid: `competitor-${p.registrationId}`,
+      summary: 'VSYC-26 — You are competing!',
+    });
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to: p.to,
+      replyTo: REPLY_TO,
+      subject: `VSYC-26 Registration Received — ${p.firstName}, here's what's next`,
+      html: buildConfirmationHtml(p, fee),
+      attachments: [
+        { filename: 'VSYC-26.ics', content: Buffer.from(ics, 'utf-8').toString('base64') },
+      ],
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+}
+
+interface MusicReceivedParams {
+  to: string;
+  firstName: string;
+  filename: string;
+  division: string;
+}
+
+export async function sendMusicReceivedEmail(p: MusicReceivedParams): Promise<EmailResult> {
+  if (!canSendEmail()) return { ok: false, error: 'resend_not_configured' };
+  try {
+    const resend = getResend();
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to: p.to,
+      replyTo: REPLY_TO,
+      subject: `Music received for VSYC-26 — ${p.firstName}`,
+      html: buildMusicReceivedHtml(p),
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+}
+
+interface PaymentReminderParams {
+  to: string;
+  firstName: string;
+  feeCents: number;
+  registrationId: string;
+  confirmUrl: string;
+}
+
+export async function sendPaymentReminderEmail(p: PaymentReminderParams): Promise<EmailResult> {
+  if (!canSendEmail()) return { ok: false, error: 'resend_not_configured' };
+  try {
+    const resend = getResend();
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to: p.to,
+      replyTo: REPLY_TO,
+      subject: `VSYC-26 Payment Reminder — ${p.firstName}`,
+      html: buildPaymentReminderHtml(p),
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+}
+
+interface SpectatorConfirmationParams {
+  to: string;
+  firstName: string;
+  spectatorId: string;
+  isPublic: boolean;
+  portalUrl?: string;
+}
+
+export async function sendSpectatorConfirmationEmail(p: SpectatorConfirmationParams): Promise<EmailResult> {
+  if (!canSendEmail()) return { ok: false, error: 'resend_not_configured' };
+  try {
+    const resend = getResend();
+    const ics = buildVsyc26Ics({
+      uid: `spectator-${p.spectatorId}`,
+      summary: 'VSYC-26 — Virginia State Yo-Yo Contest (Spectator RSVP)',
+    });
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to: p.to,
+      replyTo: REPLY_TO,
+      subject: `You're on the list for VSYC-26, ${p.firstName}!`,
+      html: buildSpectatorConfirmationHtml(p),
+      attachments: [
+        { filename: 'VSYC-26.ics', content: Buffer.from(ics, 'utf-8').toString('base64') },
+      ],
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+}
+
+interface VolunteerConfirmationParams {
+  to: string;
+  firstName: string;
+  volunteerId: string;
+  roleChoice1Label: string;
+  roleChoice2Label?: string;
+  otherRoleDescription?: string;
+}
+
+export async function sendVolunteerConfirmationEmail(p: VolunteerConfirmationParams): Promise<EmailResult> {
+  if (!canSendEmail()) return { ok: false, error: 'resend_not_configured' };
+  try {
+    const resend = getResend();
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to: p.to,
+      replyTo: REPLY_TO,
+      subject: `Volunteer application received — VSYC-26, ${p.firstName}`,
+      html: buildVolunteerConfirmationHtml(p),
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+}
+
+// ─── HTML builders ───────────────────────────────────────────────────────────
+
+function emailWrap(body: string): string {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#0d1428;font-family:Montserrat,system-ui,sans-serif;color:#c8d0e0;">
+<div style="max-width:560px;margin:0 auto;padding:40px 24px;">
+  <div style="border-top:4px solid #C9A84C;background:#1a2744;padding:32px;">
+    <div style="font-size:0.6rem;letter-spacing:0.2em;font-weight:800;color:#C9A84C;margin-bottom:8px;">VSYC-26 · VIRGINIA STATE YO-YO CONTEST 2026</div>
+    ${body}
+    <div style="margin-top:32px;padding-top:20px;border-top:1px solid #2a3a5a;font-size:0.72rem;color:#3a4a6a;">
+      Questions? Reply to this email or contact <a href="mailto:dmvthrowers@gmail.com" style="color:#C9A84C;">dmvthrowers@gmail.com</a><br/>
+      September 19, 2026 · Dulles Town Center · Sterling, VA
+    </div>
+  </div>
+</div></body></html>`;
+}
+
+function buildConfirmationHtml(p: ConfirmationParams, fee: string): string {
+  return emailWrap(`
+    <h1 style="font-family:Georgia,serif;font-size:1.6rem;color:#C9A84C;margin:0 0 8px;">Registration Received</h1>
+    <p style="font-size:0.9rem;margin:0 0 24px;">Hey ${esc(p.firstName)} — you're in. Here's everything you need.</p>
+    <div style="background:#0d1428;padding:20px;margin-bottom:16px;">
+      <div style="font-size:0.6rem;letter-spacing:0.16em;color:#C9A84C;font-weight:800;margin-bottom:12px;">YOUR REGISTRATION</div>
+      <div style="font-size:0.85rem;margin-bottom:6px;"><strong style="color:#fff;">Name:</strong> ${esc(p.firstName)} ${esc(p.lastName)}</div>
+      <div style="font-size:0.85rem;margin-bottom:6px;"><strong style="color:#fff;">Division(s):</strong> ${esc(p.divisions.join(', '))}</div>
+      <div style="font-size:0.85rem;margin-bottom:6px;"><strong style="color:#fff;">Entry fee:</strong> ${fee}</div>
+      <div style="font-size:0.85rem;"><strong style="color:#fff;">ID:</strong> ${p.registrationId.slice(0, 8).toUpperCase()}</div>
+    </div>
+    ${!p.isComp && !p.alreadyPaid ? `
+    <div style="background:#0d1428;border-left:4px solid #C8102E;padding:20px;margin-bottom:16px;">
+      <div style="font-size:0.6rem;letter-spacing:0.16em;color:#C8102E;font-weight:800;margin-bottom:12px;">PAYMENT REQUIRED</div>
+      <p style="font-size:0.85rem;margin:0 0 12px;">Complete your secure Stripe checkout for <strong style="color:#fff;">${fee}</strong> in your registration portal.</p>
+      <a href="${p.confirmUrl}" style="display:inline-block;background:#C9A84C;color:#0d1428;font-weight:800;font-size:0.78rem;letter-spacing:0.1em;padding:12px 24px;text-decoration:none;">COMPLETE PAYMENT →</a>
+      <p style="font-size:0.75rem;margin:12px 0 0;color:#6a7a9a;">Day-of alternatives may be available at the registration desk.</p>
+    </div>` : ''}
+    ${p.musicUploadUrl ? `
+    <div style="background:#0d1428;border-left:4px solid #C9A84C;padding:20px;margin-bottom:16px;">
+      <div style="font-size:0.6rem;letter-spacing:0.16em;color:#C9A84C;font-weight:800;margin-bottom:12px;">MUSIC UPLOAD</div>
+      <p style="font-size:0.85rem;margin:0 0 12px;">Upload your music using the secure link below. <strong style="color:#fff;">Deadline: September 12, 2026.</strong></p>
+      <a href="${p.musicUploadUrl}" style="display:inline-block;background:#C9A84C;color:#0d1428;font-weight:800;font-size:0.78rem;letter-spacing:0.1em;padding:12px 24px;text-decoration:none;">UPLOAD MUSIC →</a>
+      <p style="font-size:0.75rem;margin:12px 0 0;color:#6a7a9a;">Format: DIVISION_LastName_FirstName.mp3 — the system will rename it automatically.</p>
+      <p style="font-size:0.75rem;margin:8px 0 0;color:#6a7a9a;">Music must be appropriate for all audiences — no explicit language, sexual content, or glorification of violence. <strong style="color:#fff;">Inappropriate music results in disqualification.</strong> Full rules are on the upload page.</p>
+    </div>
+    ` : `
+    <div style="background:#0d1428;border-left:4px solid #C9A84C;padding:20px;margin-bottom:16px;">
+      <div style="font-size:0.6rem;letter-spacing:0.16em;color:#C9A84C;font-weight:800;margin-bottom:12px;">MUSIC UPLOAD</div>
+      <p style="font-size:0.85rem;margin:0;">Music upload unlocks in your registration portal after payment is received. <strong style="color:#fff;">Deadline: September 12, 2026.</strong></p>
+      <p style="font-size:0.75rem;margin:8px 0 0;color:#6a7a9a;">Start picking your track now: it must be appropriate for all audiences — no explicit language, sexual content, or glorification of violence. <strong style="color:#fff;">Inappropriate music results in disqualification.</strong> Full rules are on the upload page.</p>
+    </div>
+    `}
+    <p style="font-size:0.78rem;color:#6a7a9a;margin:0 0 16px;">📅 A calendar invite (VSYC-26.ics) is attached — add it to your calendar so you don't miss the day.</p>
+    <a href="${p.confirmUrl}" style="display:inline-block;background:#1a2744;border:1px solid #2a3a5a;color:#C9A84C;font-size:0.78rem;font-weight:700;letter-spacing:0.1em;padding:10px 20px;text-decoration:none;margin-top:4px;">VIEW YOUR REGISTRATION →</a>
+  `);
+}
+
+function buildMusicReceivedHtml(p: MusicReceivedParams): string {
+  return emailWrap(`
+    <h1 style="font-family:Georgia,serif;font-size:1.6rem;color:#C9A84C;margin:0 0 8px;">Music Received</h1>
+    <p style="font-size:0.9rem;margin:0 0 24px;">Got it, ${esc(p.firstName)}. Your music is in.</p>
+    <div style="background:#0d1428;padding:20px;margin-bottom:16px;">
+      <div style="font-size:0.85rem;margin-bottom:6px;"><strong style="color:#fff;">Division:</strong> ${esc(p.division)}</div>
+      <div style="font-size:0.85rem;"><strong style="color:#fff;">File saved as:</strong> <span style="font-family:monospace;color:#C9A84C;">${esc(p.filename)}</span></div>
+    </div>
+    <p style="font-size:0.82rem;color:#6a7a9a;">Music deadline was September 12, 2026. You're all set. See you at Dulles Town Center on September 19.</p>
+  `);
+}
+
+function buildPaymentReminderHtml(p: PaymentReminderParams): string {
+  const fee = `$${(p.feeCents / 100).toFixed(2)}`;
+  return emailWrap(`
+    <h1 style="font-family:Georgia,serif;font-size:1.6rem;color:#C9A84C;margin:0 0 8px;">Payment Reminder</h1>
+    <p style="font-size:0.9rem;margin:0 0 24px;">Hey ${esc(p.firstName)} — we haven't received your VSYC-26 entry payment yet.</p>
+    <div style="background:#0d1428;border-left:4px solid #C8102E;padding:20px;margin-bottom:16px;">
+      <div style="font-size:0.85rem;margin-bottom:6px;"><strong style="color:#fff;">Amount due:</strong> ${fee}</div>
+      <div style="font-size:0.85rem;margin-bottom:4px;">Complete secure payment in your registration portal (Stripe).</div>
+      <a href="${p.confirmUrl}" style="display:inline-block;background:#C9A84C;color:#0d1428;font-weight:800;font-size:0.78rem;letter-spacing:0.1em;padding:10px 20px;text-decoration:none;margin-top:6px;">PAY NOW →</a>
+      <p style="font-size:0.75rem;margin:10px 0 0;color:#6a7a9a;">Day-of alternatives may be available at the registration desk.</p>
+    </div>
+    <p style="font-size:0.82rem;color:#6a7a9a;">Registration closes September 12. Unpaid registrations may be released after that date. Questions? Reply to this email.</p>
+  `);
+}
+
+function buildSpectatorConfirmationHtml(p: SpectatorConfirmationParams): string {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://register.dmvthrowers.club';
+  const portalUrl = p.portalUrl ?? `${baseUrl}/spectators/portal`;
+  return emailWrap(`
+    <h1 style="font-family:Georgia,serif;font-size:1.6rem;color:#C9A84C;margin:0 0 8px;">You're on the list!</h1>
+    <p style="font-size:0.9rem;margin:0 0 24px;">Hey ${esc(p.firstName)} — see you at VSYC-26. Spectating is always free, all ages.</p>
+    <div style="background:#0d1428;padding:20px;margin-bottom:16px;">
+      <div style="font-size:0.85rem;margin-bottom:6px;"><strong style="color:#fff;">Where:</strong> Dulles Town Center, Sterling, VA</div>
+      <div style="font-size:0.85rem;margin-bottom:6px;"><strong style="color:#fff;">When:</strong> September 19, 2026</div>
+      <div style="font-size:0.85rem;"><strong style="color:#fff;">Listed publicly:</strong> ${p.isPublic ? 'Yes — your profile will show on the site' : 'No — you\'re registered privately'}</div>
+    </div>
+    <div style="background:#0d1428;border-left:4px solid #C9A84C;padding:20px;margin-bottom:16px;">
+      <div style="font-size:0.6rem;letter-spacing:0.16em;color:#C9A84C;font-weight:800;margin-bottom:12px;">MANAGE YOUR RSVP</div>
+      <p style="font-size:0.85rem;margin:0 0 12px;">Need to update your profile later? Use the spectator portal magic-link login.</p>
+      <a href="${portalUrl}" style="display:inline-block;background:#C9A84C;color:#0d1428;font-weight:800;font-size:0.78rem;letter-spacing:0.1em;padding:10px 20px;text-decoration:none;margin-top:6px;">OPEN SPECTATOR PORTAL →</a>
+    </div>
+    <p style="font-size:0.78rem;color:#6a7a9a;margin:0 0 16px;">📅 A calendar invite (VSYC-26.ics) is attached — add it to your calendar so you don't miss the day.</p>
+    <p style="font-size:0.82rem;color:#6a7a9a;">Full event details and schedule: <a href="https://dmvthrowers.club/vsyc26-schedule.html" style="color:#C9A84C;">dmvthrowers.club/vsyc26-schedule.html</a></p>
+  `);
+}
+
+function buildVolunteerConfirmationHtml(p: VolunteerConfirmationParams): string {
+  return emailWrap(`
+    <h1 style="font-family:Georgia,serif;font-size:1.6rem;color:#C9A84C;margin:0 0 8px;">Thanks for volunteering!</h1>
+    <p style="font-size:0.9rem;margin:0 0 24px;">Hey ${esc(p.firstName)} — your VSYC-26 volunteer application is in.</p>
+    <div style="background:#0d1428;padding:20px;margin-bottom:16px;">
+      <div style="font-size:0.6rem;letter-spacing:0.16em;color:#C9A84C;font-weight:800;margin-bottom:12px;">YOUR APPLICATION</div>
+      <div style="font-size:0.85rem;margin-bottom:6px;"><strong style="color:#fff;">1st choice:</strong> ${esc(p.roleChoice1Label)}</div>
+      ${p.roleChoice2Label ? `<div style="font-size:0.85rem;margin-bottom:6px;"><strong style="color:#fff;">2nd choice:</strong> ${esc(p.roleChoice2Label)}</div>` : ''}
+      ${p.otherRoleDescription ? `<div style="font-size:0.85rem;margin-bottom:6px;"><strong style="color:#fff;">Your idea:</strong> ${esc(p.otherRoleDescription)}</div>` : ''}
+      <div style="font-size:0.85rem;"><strong style="color:#fff;">Status:</strong> Pending review</div>
+    </div>
+    <div style="background:#0d1428;border-left:4px solid #C9A84C;padding:20px;margin-bottom:16px;">
+      <div style="font-size:0.6rem;letter-spacing:0.16em;color:#C9A84C;font-weight:800;margin-bottom:12px;">WHAT HAPPENS NEXT</div>
+      <p style="font-size:0.85rem;margin:0;">Role assignments are made by the event organizer based on need — your final role may differ from your top choice, and some roles fill up fast. We'll follow up by email to confirm your assignment and shift time before the event.</p>
+    </div>
+    <p style="font-size:0.82rem;color:#6a7a9a;margin:0 0 8px;">Once confirmed, you'll get a follow-up email with a code for 50% off your own VSYC-26 entry fee.</p>
+    <p style="font-size:0.82rem;color:#6a7a9a;margin:0 0 8px;">Where: Dulles Town Center, Sterling, VA · When: September 19, 2026</p>
+    <p style="font-size:0.78rem;color:#6a7a9a;">Questions in the meantime? Reply to this email — it goes straight to the organizer.</p>
+  `);
+}
+
+interface VolunteerConfirmedParams {
+  to: string;
+  firstName: string;
+  assignedRoleLabel: string;
+  compCode: string;
+  discountPercent: number;
+  shiftPreference?: string;
+}
+
+export async function sendVolunteerConfirmedEmail(p: VolunteerConfirmedParams): Promise<EmailResult> {
+  if (!canSendEmail()) return { ok: false, error: 'resend_not_configured' };
+  try {
+    const resend = getResend();
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to: p.to,
+      replyTo: REPLY_TO,
+      subject: `You're confirmed for VSYC-26, ${p.firstName} — plus your discount code`,
+      html: buildVolunteerConfirmedHtml(p),
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+}
+
+function buildVolunteerConfirmedHtml(p: VolunteerConfirmedParams): string {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://register.dmvthrowers.club';
+  return emailWrap(`
+    <h1 style="font-family:Georgia,serif;font-size:1.6rem;color:#C9A84C;margin:0 0 8px;">You're confirmed!</h1>
+    <p style="font-size:0.9rem;margin:0 0 24px;">Hey ${esc(p.firstName)} — you're locked in as <strong style="color:#fff;">${esc(p.assignedRoleLabel)}</strong> for VSYC-26.${p.shiftPreference ? ` We'll follow up with your exact shift time.` : ''}</p>
+    <div style="background:#0d1428;border-left:4px solid #C9A84C;padding:20px;margin-bottom:16px;">
+      <div style="font-size:0.6rem;letter-spacing:0.16em;color:#C9A84C;font-weight:800;margin-bottom:12px;">YOUR ${p.discountPercent}% OFF CODE</div>
+      <p style="font-size:0.85rem;margin:0 0 12px;">As a thank-you, here's a one-time code for ${p.discountPercent}% off your own VSYC-26 competitor entry fee.</p>
+      <div style="background:#1a2744;border:1px dashed #C9A84C;padding:14px 18px;text-align:center;margin-bottom:12px;">
+        <span style="font-family:monospace;font-size:1.3rem;letter-spacing:0.1em;color:#C9A84C;font-weight:800;">${esc(p.compCode)}</span>
+      </div>
+      <p style="font-size:0.75rem;margin:0 0 12px;color:#6a7a9a;">Enter this code at checkout when you register to compete. One-time use, valid through event day.</p>
+      <a href="${baseUrl}/" style="display:inline-block;background:#C9A84C;color:#0d1428;font-weight:800;font-size:0.78rem;letter-spacing:0.1em;padding:10px 20px;text-decoration:none;">REGISTER TO COMPETE →</a>
+    </div>
+    <p style="font-size:0.82rem;color:#6a7a9a;margin:0 0 8px;">Where: Dulles Town Center, Sterling, VA · When: September 19, 2026</p>
+    <p style="font-size:0.78rem;color:#6a7a9a;">Questions about your role or shift? Reply to this email — it goes straight to the organizer.</p>
+  `);
+}
