@@ -137,9 +137,12 @@ export default function JudgePage() {
     return await res.json() as StaffMe;
   }, []);
 
-  const fetchRunOrder = useCallback(async (div: Division) => {
+  const fetchRunOrder = useCallback(async (div: Division, accessToken: string) => {
     try {
-      const res = await fetch(`/api/run-order?division=${div}`);
+      // Staff token: judges need full legal names to identify performers.
+      const res = await fetch(`/api/run-order?division=${div}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
       if (res.ok) {
         const json = await res.json() as { performers?: Performer[] };
         setRunOrder(json.performers ?? []);
@@ -213,10 +216,10 @@ export default function JudgePage() {
 
   useEffect(() => {
     if (!staff || !token) return;
-    fetchRunOrder(division);
+    fetchRunOrder(division, token);
     fetchMyScores(division, token);
     const interval = setInterval(() => {
-      fetchRunOrder(division);
+      fetchRunOrder(division, token);
       fetchMyScores(division, token);
     }, 20000);
     return () => clearInterval(interval);
