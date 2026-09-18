@@ -104,6 +104,9 @@ export default async function ResultsPage() {
                 ? 'Results are being finalized — check back shortly.'
                 : 'Final standings, averaged across all judges.'}
           </p>
+          <p style={{ color: 'var(--text-body)', margin: '0.5rem 0 0' }}>
+            <a href="/results/run-order" style={{ color: 'var(--gold-light)' }}>See who&rsquo;s up next in the live run order →</a>
+          </p>
         </header>
 
         {!resultsPublished || !standings ? (

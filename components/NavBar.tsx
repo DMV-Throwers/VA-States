@@ -30,6 +30,7 @@ const MORE_LINKS = [
   { label: 'Volunteer', href: '/volunteer' },
   { label: 'Directory', href: '/directory' },
   { label: 'Results',   href: '/results' },
+  { label: 'Run Order', href: '/results/run-order' },
   { label: 'Budget',    href: '/budget' },
 ];
 
