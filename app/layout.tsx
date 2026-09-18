@@ -6,11 +6,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://register.dmvthrowe
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: 'Register · VSYC-26 · Virginia State Yo-Yo Contest 2026',
-  description: 'Competitor registration for VSYC-26 — September 19, 2026 · Dulles Town Center · Sterling, VA. 1A: $30, X Division: $25, Sport/Beginner/Junior: $20.',
+  title: 'Register · VSYC-26 · Brought to You by Goodles',
+  description: 'Competitor registration for VSYC-26 — brought to you by Goodles. September 19, 2026 · Dulles Town Center · Sterling, VA. 1A: $30, X Division: $25, Sport/Beginner/Junior: $20.',
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'Register · VSYC-26',
+    title: 'Register · VSYC-26 · Brought to You by Goodles',
     description: 'Competitor registration — September 19, 2026 · Dulles Town Center · Sterling, VA',
     url: SITE_URL,
     siteName: 'DMV Throwers',
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     site: '@dmv_throwers',
-    title: 'Register · VSYC-26',
+    title: 'Register · VSYC-26 · Brought to You by Goodles',
     description: 'Competitor registration — September 19, 2026 · Dulles Town Center',
     images: ['https://dmvthrowers.club/assets/images/vsyc26-va-logo-512.png'],
   },
@@ -49,10 +49,15 @@ const eventJsonLd = {
     name: 'DMV Throwers',
     url: 'https://dmvthrowers.club',
   },
+  sponsor: {
+    '@type': 'Organization',
+    name: 'Goodles',
+    url: 'https://www.goodles.com/shop/?collection=twirly-mac',
+  },
   offers: [
-    { '@type': 'Offer', name: '1A — Single String', price: '25', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
-    { '@type': 'Offer', name: 'X Division', price: '20', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
-    { '@type': 'Offer', name: 'Sport / Beginner / Junior', price: '15', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
+    { '@type': 'Offer', name: '1A — Single String', price: '30', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
+    { '@type': 'Offer', name: 'X Division', price: '25', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
+    { '@type': 'Offer', name: 'Sport / Beginner / Junior', price: '20', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
   ],
 };
 
