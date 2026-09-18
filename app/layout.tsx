@@ -55,9 +55,9 @@ const eventJsonLd = {
     url: 'https://www.goodles.com/shop/?collection=twirly-mac',
   },
   offers: [
-    { '@type': 'Offer', name: '1A — Single String', price: '25', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
-    { '@type': 'Offer', name: 'X Division', price: '20', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
-    { '@type': 'Offer', name: 'Sport / Beginner / Junior', price: '15', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
+    { '@type': 'Offer', name: '1A — Single String', price: '30', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
+    { '@type': 'Offer', name: 'X Division', price: '25', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
+    { '@type': 'Offer', name: 'Sport / Beginner / Junior', price: '20', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
   ],
 };
 
