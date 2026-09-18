@@ -70,6 +70,32 @@ export default function Footer() {
             </div>
           </a>
 
+          {/* Presenting sponsor */}
+          <a
+            href="https://www.goodles.com/shop/?collection=twirly-mac"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
+          >
+            <span style={{
+              fontFamily: 'var(--font-condensed)',
+              fontSize: '0.6rem',
+              letterSpacing: '0.15em',
+              color: '#8a9ab5',
+              fontWeight: 700,
+              textTransform: 'uppercase' as const,
+            }}>
+              Brought to<br/>you by
+            </span>
+            <Image
+              src="https://dmvthrowers.club/assets/images/logos/goodles.png"
+              alt="Goodles"
+              width={90}
+              height={31}
+              style={{ objectFit: 'contain' }}
+            />
+          </a>
+
           {/* Links */}
           <nav aria-label="Footer navigation">
             {FOOTER_LINKS.map(link => (

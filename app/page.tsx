@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import type { Division } from '@/lib/pricing';
 import { calculateFeePreview, formatCents } from '@/lib/pricing';
 import NavBar from '@/components/NavBar';
@@ -252,7 +253,20 @@ export default function RegisterPage() {
         <div className="max-w-5xl mx-auto relative">
           <span className="inline-block bg-gold text-navy-deep text-xs font-black tracking-widest px-3 py-1 mb-3">VSYC-26</span>
           <h1 className="font-display font-black text-4xl text-gold mb-2">Register to Compete</h1>
-          <p className="text-xs tracking-widest text-white/70 font-semibold uppercase">Virginia State Yo-Yo Contest · September 19, 2026 · Sterling, VA</p>
+          <p className="text-xs tracking-widest text-white/70 font-semibold uppercase">
+            <span className="hidden sm:inline">Virginia State Yo-Yo Contest, brought to you by Goodles · September 19, 2026 · Sterling, VA</span>
+            <span className="sm:hidden">VA State Yoyo × Goodles · Sept 19, 2026</span>
+          </p>
+          <div className="flex items-center gap-2 mt-3">
+            <span className="text-[0.6rem] tracking-widest text-white/50 font-semibold uppercase">Presented by</span>
+            <Image
+              src="https://dmvthrowers.club/assets/images/logos/goodles.png"
+              alt="Goodles"
+              width={100}
+              height={34}
+              className="object-contain"
+            />
+          </div>
           <a
             href="/spectate"
             className="inline-block mt-4 mr-3 border border-gold text-gold text-xs font-black tracking-caps px-3 py-2 hover:bg-gold hover:text-navy-deep transition-colors"
