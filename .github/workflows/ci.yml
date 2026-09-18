@@ -14,6 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NEXT_TELEMETRY_DISABLED: "1"
+      # Next's prerender pass executes module-scope code, and several client
+      # components construct a Supabase browser client there. Without these the
+      # build dies with "supabaseUrl is required" while exporting /judge.
+      # Static generation makes no live network call, so these are placeholders
+      # and never need to be real credentials.
+      NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder-anon-key"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
