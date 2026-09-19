@@ -16,6 +16,7 @@ interface Performer {
   status: Status;
   registration_id: string;
   display_name: string;
+  style: string | null;
 }
 
 const STATUS_LABEL: Record<Status, string> = {
@@ -44,6 +45,7 @@ export default function RunOrderBoard() {
         status: p.status,
         registration_id: p.registration_id,
         display_name: p.display_name,
+        style: p.style ?? null,
       }));
       setPerformers(list);
       setError(false);
@@ -134,14 +136,38 @@ export default function RunOrderBoard() {
                   </span>
                   <div
                     style={{
-                      fontSize: '0.95rem',
-                      fontWeight: 700,
-                      color: isPerforming ? 'var(--gold)' : '#fff',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      gap: '0.5rem',
+                      minWidth: 0,
                     }}
                   >
-                    {p.display_name}
+                    <div
+                      style={{
+                        fontSize: '0.95rem',
+                        fontWeight: 700,
+                        color: isPerforming ? 'var(--gold)' : '#fff',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {p.display_name}
+                    </div>
+                    {p.style && (
+                      <span
+                        style={{
+                          fontSize: '0.65rem',
+                          fontWeight: 800,
+                          letterSpacing: '0.05em',
+                          color: 'var(--navy-deep)',
+                          background: 'var(--gold)',
+                          padding: '0.1rem 0.4rem',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {p.style}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <span

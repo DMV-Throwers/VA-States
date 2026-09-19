@@ -8,7 +8,7 @@ const VALID_DIVISIONS = ['1A', 'X', 'SBJ'] as const;
 type Division = typeof VALID_DIVISIONS[number];
 
 const REGISTRATION_FIELDS =
-  'id, first_name, last_name, preferred_bracket_name, nickname, is_minor, is_public, city, state, music_filename';
+  'id, first_name, last_name, preferred_bracket_name, nickname, is_minor, is_public, city, state, music_filename, x_substyle';
 
 /**
  * GET /api/run-order?division=1A
@@ -76,6 +76,7 @@ export const GET = withErrorHandling(async (requestId, req: NextRequest) => {
     city: string | null;
     state: string | null;
     music_filename: string | null;
+    x_substyle: string | null;
   };
 
   const toPerformer = (
@@ -94,6 +95,9 @@ export const GET = withErrorHandling(async (requestId, req: NextRequest) => {
       city: hideLocation ? null : (reg?.city ?? null),
       state: hideLocation ? null : (reg?.state ?? null),
       music_filename: withMusic ? (reg?.music_filename ?? null) : null,
+      // X division freestyle style (2A/3A/4A/5A). Null for every other division —
+      // not sensitive, just not applicable outside X.
+      style: reg?.x_substyle ?? null,
     };
   };
 
