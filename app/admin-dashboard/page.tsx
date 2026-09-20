@@ -116,7 +116,7 @@ export default function AdminDashboardPage() {
   const [compCodeDescription, setCompCodeDescription] = useState('');
   const [compCodeMaxUses, setCompCodeMaxUses] = useState('1');
   const [compCodeDiscountPercent, setCompCodeDiscountPercent] = useState('100');
-  const [compCodeExpiresAt, setCompCodeExpiresAt] = useState('2026-09-12');
+  const [compCodeExpiresAt, setCompCodeExpiresAt] = useState('2026-09-17');
   const [compCodeActive, setCompCodeActive] = useState(true);
 
   const [contestantQuery, setContestantQuery] = useState('');
@@ -453,7 +453,7 @@ export default function AdminDashboardPage() {
       setCompCodeDescription('');
       setCompCodeMaxUses('1');
       setCompCodeDiscountPercent('100');
-      setCompCodeExpiresAt('2026-09-12');
+      setCompCodeExpiresAt('2026-09-17');
       setCompCodeActive(true);
       setStatusMsg(`Created comp code ${json.code.code} at ${json.code.discount_percent}% off.`);
     } catch (err) {

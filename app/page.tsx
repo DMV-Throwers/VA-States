@@ -371,21 +371,21 @@ export default function RegisterPage() {
                 {
                   code: '1A' as Division,
                   name: '1A — Single String',
-                  price: '$25',
+                  price: '$30',
                   desc: 'Classic 1-string freestyle. 2-minute routine, judged on technical execution plus trick presentation, performance quality, musicality, and routine construction.',
                   format: '2 min · Scored judging',
                 },
                 {
                   code: 'X' as Division,
                   name: 'X Division',
-                  price: '$20',
+                  price: '$25',
                   desc: 'Non-1A styles: 2A (looping), 3A (two strings), 4A (offstring), or 5A (freehand). Pick one.',
                   format: '2 min · Scored judging',
                 },
                 {
                   code: 'SBJ' as Division,
                   name: 'Sport / Beginner / Junior',
-                  price: '$15',
+                  price: '$20',
                   desc: 'Open to all skill levels and ages. Relaxed format, simplified judging, great entry point.',
                   format: '90 sec · Simplified scoring',
                 },
@@ -455,7 +455,7 @@ export default function RegisterPage() {
             {/* Combo note */}
             {watchedDivisions.includes('1A') && watchedDivisions.includes('X') && (
               <div className="mt-3 p-3 border border-gold/40 bg-navy text-xs text-gold font-semibold">
-                ★ 1A + X Division combo: $40 (saves $5 vs. registering separately)
+                ★ 1A + X Division combo: $50 (saves $5 vs. registering separately)
               </div>
             )}
 
@@ -801,7 +801,7 @@ export default function RegisterPage() {
                   {watchedDivisions.map(d => (
                     <div key={d} className="flex justify-between text-sm">
                       <span className="text-text-body">{d === 'SBJ' ? 'Sport/Beginner/Junior' : d}</span>
-                      <span className="text-white font-semibold">{formatCents({ '1A': 2500, 'X': 2000, 'SBJ': 1500 }[d] ?? 0)}</span>
+                      <span className="text-white font-semibold">{formatCents({ '1A': 3000, 'X': 2500, 'SBJ': 2000 }[d] ?? 0)}</span>
                     </div>
                   ))}
                 </div>
@@ -846,7 +846,7 @@ export default function RegisterPage() {
 
             <div className="mt-4 pt-4 border-t border-navy-border">
               <div className="text-xs font-black tracking-caps text-gold mb-2">MUSIC DEADLINE</div>
-              <p className="text-xs text-text-body">Upload your music in this registration app after payment. <strong className="text-white">Deadline: Sept 12, 2026.</strong></p>
+              <p className="text-xs text-text-body">Upload your music in this registration app after payment. <strong className="text-white">Deadline: Sept 17, 2026.</strong></p>
               <p className="text-xs text-text-body mt-2">Music must be appropriate for all audiences — no explicit language, sexual content, or glorification of violence. <strong className="text-white">Inappropriate music results in disqualification.</strong> Full rules are on the upload page.</p>
             </div>
 
@@ -856,7 +856,7 @@ export default function RegisterPage() {
                 {[
                   { n: '1', label: 'Submit this form', sub: 'You\'re in the queue' },
                   { n: '2', label: 'Complete Stripe checkout', sub: 'Secure online payment in portal' },
-                  { n: '3', label: 'Upload your music', sub: 'In-app upload · due Sept 12' },
+                  { n: '3', label: 'Upload your music', sub: 'In-app upload · due Sept 17' },
                   { n: '4', label: 'Show up Sept 19', sub: 'Dulles Town Center, Sterling VA' },
                 ].map(({ n, label, sub }) => (
                   <li key={n} className="flex items-start gap-2.5">

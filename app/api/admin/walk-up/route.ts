@@ -70,7 +70,7 @@ export const POST = withErrorHandling(async (requestId, req: NextRequest) => {
 
   // Generate music token (same as online flow)
   const musicUploadToken = generateToken(32);
-  const musicDeadline = new Date(process.env.MUSIC_DEADLINE_ISO ?? '2026-09-12T23:59:59-04:00');
+  const musicDeadline = new Date(process.env.MUSIC_DEADLINE_ISO ?? '2026-09-17T23:59:59-04:00');
 
   const { data: reg, error: insertError } = await supabase
     .from('vsyc_registrations')

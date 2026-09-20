@@ -16,6 +16,12 @@
 --   Stop -1 each, Discard -3 each, Detach -5 each (renamed from "Cut").
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- NOTE: the DROP COLUMN below (deduction_stop/discard/cut) needs the view
+-- dropped first (Postgres 2BP01), same issue as 0014. This migration was
+-- never applied to production until this ordering fix -- see the VSYC-26
+-- results-import session for context.
+DROP VIEW IF EXISTS vsyc_results;
+
 ALTER TABLE vsyc_scores RENAME COLUMN tech_execution TO tech_execution_raw;
 ALTER TABLE vsyc_scores DROP CONSTRAINT IF EXISTS vsyc_scores_tech_execution_check;
 ALTER TABLE vsyc_scores
@@ -37,7 +43,6 @@ ALTER TABLE vsyc_scores
   DROP COLUMN IF EXISTS deduction_discard,
   DROP COLUMN IF EXISTS deduction_cut;
 
-DROP VIEW IF EXISTS vsyc_results;
 CREATE VIEW vsyc_results AS
 WITH judge_max AS (
   SELECT
@@ -95,3 +100,5 @@ JOIN vsyc_registrations r ON r.id = s.registration_id
 LEFT JOIN judge_max jm
   ON jm.division = s.division AND jm.judge_key = COALESCE(s.judge_user_id::text, s.judge_name)
 ORDER BY s.division, final_score DESC;
+
+ALTER VIEW vsyc_results SET (security_invoker = true);

@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getEventFlagBoolean } from '@/lib/event-flags';
+import { getSocialLinks, type Socials } from '@/lib/social-links';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 
@@ -20,6 +21,7 @@ interface ResultRow {
   city: string | null;
   state: string | null;
   final_score: number | string;
+  socials: Socials | null;
 }
 
 interface Standing {
@@ -29,6 +31,7 @@ interface Standing {
   state: string | null;
   judge_count: number;
   avg_total: number;
+  socials: Socials | null;
 }
 
 async function getStandings(): Promise<Record<Division, Standing[]>> {
@@ -54,6 +57,7 @@ async function getStandings(): Promise<Record<Division, Standing[]>> {
           state: row.state,
           judge_count: 0,
           avg_total: 0,
+          socials: row.socials,
         },
         sum: 0,
       });
@@ -79,12 +83,22 @@ export const revalidate = 60;
 
 const PLACE_COLORS = ['var(--gold)', '#c7c7d1', '#cd7f32']; // 1st gold · 2nd silver · 3rd bronze
 
+/** Index of the highest-placed Virginia resident in a division's standings, or -1 if none. */
+function vaChampionIndex(standings: Standing[]): number {
+  return standings.findIndex((s) => s.state === 'VA');
+}
+
 export default async function ResultsPage() {
   const resultsPublished = await getEventFlagBoolean('results_published', process.env.RESULTS_PUBLISHED === 'true');
   const standings = resultsPublished ? await getStandings() : null;
   const total = standings
     ? Object.values(standings).reduce((s, arr) => s + arr.length, 0)
     : 0;
+
+  const podium = standings
+    ? DIVISIONS.flatMap(({ code }) => standings[code].slice(0, 3))
+    : [];
+  const podiumOutOfState = podium.filter((c) => c.state !== 'VA').length;
 
   return (
     <>
@@ -104,7 +118,25 @@ export default async function ResultsPage() {
                 ? 'Results are being finalized — check back shortly.'
                 : 'Final standings, averaged across all judges.'}
           </p>
+          <p style={{ color: 'var(--text-body)', margin: '0.5rem 0 0' }}>
+            <a href="/results/run-order" style={{ color: 'var(--gold-light)' }}>See who&rsquo;s up next in the live run order →</a>
+          </p>
         </header>
+
+        {resultsPublished && total > 0 && podium.length > 0 && (
+          <section style={{
+            border: '1px solid var(--navy-border)', background: 'var(--navy)',
+            padding: '1.25rem 1.5rem', marginBottom: '2.5rem', display: 'flex',
+            alignItems: 'center', gap: '0.85rem',
+          }}>
+            <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>🗺️</span>
+            <p style={{ color: 'var(--text-body)', fontSize: '0.9rem', margin: 0 }}>
+              <strong style={{ color: '#fff' }}>{podiumOutOfState} of {podium.length}</strong> podium spots across the three
+              divisions went to out-of-state competitors. Each division&rsquo;s top Virginia finisher is marked{' '}
+              <span style={{ color: 'var(--gold)', fontWeight: 700 }}>VA State Champion</span> below.
+            </p>
+          </section>
+        )}
 
         {!resultsPublished || !standings ? (
           <section style={{ border: '1px solid var(--navy-border)', background: 'var(--navy)', padding: '2.5rem 1.5rem', textAlign: 'center' }}>
@@ -120,6 +152,7 @@ export default async function ResultsPage() {
         ) : (
           DIVISIONS.map(({ code, label }) => {
             const comps = standings[code];
+            const vaIndex = vaChampionIndex(comps);
             return (
               <section key={code} style={{ marginBottom: '2.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1rem' }}>
@@ -159,19 +192,54 @@ export default async function ResultsPage() {
                               {i + 1}
                             </span>
                             <div style={{ minWidth: 0 }}>
-                              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: i === 0 ? 'var(--gold)' : '#fff', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {c.display_name}
+                              {i === 0 && (
+                                <div style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.1em', color: 'var(--gold)', marginBottom: '0.15rem' }}>
+                                  🥇 DIVISION CHAMPION
+                                </div>
+                              )}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: i === 0 ? '1.15rem' : '0.95rem', fontWeight: 700, color: i === 0 ? 'var(--gold)' : '#fff', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {c.display_name}
+                                </span>
+                                {i === vaIndex && (
+                                  <span style={{
+                                    fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.06em',
+                                    color: 'var(--navy)', background: 'var(--gold)',
+                                    padding: '0.15rem 0.4rem', borderRadius: 2, whiteSpace: 'nowrap',
+                                  }}>
+                                    VA STATE CHAMPION
+                                  </span>
+                                )}
                               </div>
                               {(c.city || c.state) && (
                                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
                                   {[c.city, c.state].filter(Boolean).join(', ')}
                                 </div>
                               )}
+                              {getSocialLinks(c.socials).length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.35rem' }}>
+                                  {getSocialLinks(c.socials).map((l) => (
+                                    <a
+                                      key={l.platform}
+                                      href={l.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.05em',
+                                        textTransform: 'uppercase', padding: '0.2rem 0.5rem',
+                                        border: '1px solid var(--gold)', color: 'var(--gold)', textDecoration: 'none',
+                                      }}
+                                    >
+                                      {l.label} ↗
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                           <span style={{
                             fontFamily: 'monospace', fontWeight: 800,
-                            fontSize: '1.05rem', color: i === 0 ? 'var(--gold)' : '#fff',
+                            fontSize: i === 0 ? '1.3rem' : '1.05rem', color: i === 0 ? 'var(--gold)' : '#fff',
                             flexShrink: 0, paddingLeft: '1rem',
                           }}>
                             {c.avg_total.toFixed(1)}

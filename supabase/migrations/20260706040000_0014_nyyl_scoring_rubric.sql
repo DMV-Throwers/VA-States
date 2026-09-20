@@ -12,6 +12,12 @@
 --   Final Score = Subtotal - deductions, floored at 0
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- NOTE: vsyc_results depends on the columns being dropped below, so the view
+-- must be dropped before ALTER TABLE ... DROP COLUMN runs (Postgres 2BP01),
+-- and recreated after. This migration was never applied to production until
+-- this ordering fix -- see the VSYC-26 results-import session for context.
+DROP VIEW IF EXISTS vsyc_results;
+
 ALTER TABLE vsyc_scores
   ADD COLUMN IF NOT EXISTS tech_execution       numeric(5,2) NOT NULL DEFAULT 0
                            CHECK (tech_execution >= 0 AND tech_execution <= 60),
@@ -35,7 +41,6 @@ ALTER TABLE vsyc_scores
   DROP COLUMN IF EXISTS difficulty,
   DROP COLUMN IF EXISTS presentation;
 
-DROP VIEW IF EXISTS vsyc_results;
 CREATE VIEW vsyc_results AS
 SELECT
   s.division,
@@ -68,3 +73,5 @@ SELECT
 FROM vsyc_scores s
 JOIN vsyc_registrations r ON r.id = s.registration_id
 ORDER BY s.division, final_score DESC;
+
+ALTER VIEW vsyc_results SET (security_invoker = true);

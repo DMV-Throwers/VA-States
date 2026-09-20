@@ -7,7 +7,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://register.dmvthrowe
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: 'Register · VSYC-26 · Brought to You by Goodles',
-  description: 'Competitor registration for VSYC-26 — brought to you by Goodles. September 19, 2026 · Dulles Town Center · Sterling, VA. 1A: $25, X Division: $20, Sport/Beginner/Junior: $15.',
+  description: 'Competitor registration for VSYC-26 — brought to you by Goodles. September 19, 2026 · Dulles Town Center · Sterling, VA. 1A: $30, X Division: $25, Sport/Beginner/Junior: $20.',
   alternates: { canonical: '/' },
   openGraph: {
     title: 'Register · VSYC-26 · Brought to You by Goodles',
@@ -55,9 +55,9 @@ const eventJsonLd = {
     url: 'https://www.goodles.com/shop/?collection=twirly-mac',
   },
   offers: [
-    { '@type': 'Offer', name: '1A — Single String', price: '25', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
-    { '@type': 'Offer', name: 'X Division', price: '20', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
-    { '@type': 'Offer', name: 'Sport / Beginner / Junior', price: '15', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
+    { '@type': 'Offer', name: '1A — Single String', price: '30', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
+    { '@type': 'Offer', name: 'X Division', price: '25', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
+    { '@type': 'Offer', name: 'Sport / Beginner / Junior', price: '20', priceCurrency: 'USD', url: 'https://register.dmvthrowers.club', availability: 'https://schema.org/InStock' },
   ],
 };
 

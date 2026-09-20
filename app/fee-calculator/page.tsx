@@ -25,21 +25,21 @@ const DIVISIONS: DivisionInfo[] = [
     id: '1A',
     name: '1A',
     desc: 'String Trick — single yo-yo on a single string. The most popular competitive style.',
-    baseCents: 2500,
+    baseCents: 3000,
     badge: 'Open',
   },
   {
     id: 'X',
     name: 'X Division',
     desc: 'Multi-style division: 2A looping, 3A two-handed string, 4A offstring, 5A freehand.',
-    baseCents: 2000,
+    baseCents: 2500,
     badge: 'Open',
   },
   {
     id: 'SBJ',
     name: 'Sport · Beginner · Junior',
     desc: 'For new competitors and youth players learning the competitive experience.',
-    baseCents: 1500,
+    baseCents: 2000,
     badge: 'Entry Level',
   },
 ];
@@ -127,10 +127,10 @@ export default function FeeCalculatorPage() {
 
     if (result.combo_applied) {
       // Show original prices struck through, then combo line
-      if (has1A) lineItems.push({ label: '1A', cents: 2500, strike: true });
-      if (hasX)  lineItems.push({ label: 'X Division', cents: 2000, strike: true });
-      lineItems.push({ label: '1A + X Combo', cents: 4000 });
-      if (selected.has('SBJ')) lineItems.push({ label: 'Sport · Beginner · Junior', cents: 1500 });
+      if (has1A) lineItems.push({ label: '1A', cents: 3000, strike: true });
+      if (hasX)  lineItems.push({ label: 'X Division', cents: 2500, strike: true });
+      lineItems.push({ label: '1A + X Combo', cents: 5000 });
+      if (selected.has('SBJ')) lineItems.push({ label: 'Sport · Beginner · Junior', cents: 2000 });
     } else {
       for (const d of selected) {
         const info = DIVISIONS.find(x => x.id === d)!;
@@ -352,7 +352,7 @@ export default function FeeCalculatorPage() {
                     </div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.5 }}>
                       Entering both 1A and X Division? You get the combo rate:{' '}
-                      <strong style={{ color: '#fff' }}>$40 flat</strong> instead of $45 — saving you{' '}
+                      <strong style={{ color: '#fff' }}>$50 flat</strong> instead of $55 — saving you{' '}
                       <strong style={{ color: 'var(--gold)' }}>$5</strong>.
                     </div>
                   </div>
@@ -597,7 +597,7 @@ export default function FeeCalculatorPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', fontSize: '0.85rem' }}>
                     <span style={{ color: 'var(--text-body)' }}>1A + X Combo</span>
                     <span style={{ color: '#fff', fontWeight: 600 }}>
-                      $40.00
+                      $50.00
                       {isEarlyBird && (
                         <span style={{ color: 'var(--gold)', fontSize: '0.72rem', marginLeft: 6 }}>
                           ($35.00 early bird)
