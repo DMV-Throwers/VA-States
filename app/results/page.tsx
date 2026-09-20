@@ -79,12 +79,22 @@ export const revalidate = 60;
 
 const PLACE_COLORS = ['var(--gold)', '#c7c7d1', '#cd7f32']; // 1st gold · 2nd silver · 3rd bronze
 
+/** Index of the highest-placed Virginia resident in a division's standings, or -1 if none. */
+function vaChampionIndex(standings: Standing[]): number {
+  return standings.findIndex((s) => s.state === 'VA');
+}
+
 export default async function ResultsPage() {
   const resultsPublished = await getEventFlagBoolean('results_published', process.env.RESULTS_PUBLISHED === 'true');
   const standings = resultsPublished ? await getStandings() : null;
   const total = standings
     ? Object.values(standings).reduce((s, arr) => s + arr.length, 0)
     : 0;
+
+  const podium = standings
+    ? DIVISIONS.flatMap(({ code }) => standings[code].slice(0, 3))
+    : [];
+  const podiumOutOfState = podium.filter((c) => c.state !== 'VA').length;
 
   return (
     <>
@@ -109,6 +119,21 @@ export default async function ResultsPage() {
           </p>
         </header>
 
+        {resultsPublished && total > 0 && podium.length > 0 && (
+          <section style={{
+            border: '1px solid var(--navy-border)', background: 'var(--navy)',
+            padding: '1.25rem 1.5rem', marginBottom: '2.5rem', display: 'flex',
+            alignItems: 'center', gap: '0.85rem',
+          }}>
+            <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>🗺️</span>
+            <p style={{ color: 'var(--text-body)', fontSize: '0.9rem', margin: 0 }}>
+              <strong style={{ color: '#fff' }}>{podiumOutOfState} of {podium.length}</strong> podium spots across the three
+              divisions went to out-of-state competitors. Each division&rsquo;s top Virginia finisher is marked{' '}
+              <span style={{ color: 'var(--gold)', fontWeight: 700 }}>VA State Champion</span> below.
+            </p>
+          </section>
+        )}
+
         {!resultsPublished || !standings ? (
           <section style={{ border: '1px solid var(--navy-border)', background: 'var(--navy)', padding: '2.5rem 1.5rem', textAlign: 'center' }}>
             <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>🏆</div>
@@ -123,6 +148,7 @@ export default async function ResultsPage() {
         ) : (
           DIVISIONS.map(({ code, label }) => {
             const comps = standings[code];
+            const vaIndex = vaChampionIndex(comps);
             return (
               <section key={code} style={{ marginBottom: '2.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1rem' }}>
@@ -162,8 +188,19 @@ export default async function ResultsPage() {
                               {i + 1}
                             </span>
                             <div style={{ minWidth: 0 }}>
-                              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: i === 0 ? 'var(--gold)' : '#fff', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {c.display_name}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: i === 0 ? 'var(--gold)' : '#fff', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {c.display_name}
+                                </span>
+                                {i === vaIndex && (
+                                  <span style={{
+                                    fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.06em',
+                                    color: 'var(--navy)', background: 'var(--gold)',
+                                    padding: '0.15rem 0.4rem', borderRadius: 2, whiteSpace: 'nowrap',
+                                  }}>
+                                    VA STATE CHAMPION
+                                  </span>
+                                )}
                               </div>
                               {(c.city || c.state) && (
                                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
