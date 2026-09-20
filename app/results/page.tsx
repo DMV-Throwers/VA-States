@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getEventFlagBoolean } from '@/lib/event-flags';
+import { getSocialLinks, type Socials } from '@/lib/social-links';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 
@@ -20,6 +21,7 @@ interface ResultRow {
   city: string | null;
   state: string | null;
   final_score: number | string;
+  socials: Socials | null;
 }
 
 interface Standing {
@@ -29,6 +31,7 @@ interface Standing {
   state: string | null;
   judge_count: number;
   avg_total: number;
+  socials: Socials | null;
 }
 
 async function getStandings(): Promise<Record<Division, Standing[]>> {
@@ -54,6 +57,7 @@ async function getStandings(): Promise<Record<Division, Standing[]>> {
           state: row.state,
           judge_count: 0,
           avg_total: 0,
+          socials: row.socials,
         },
         sum: 0,
       });
@@ -210,6 +214,25 @@ export default async function ResultsPage() {
                               {(c.city || c.state) && (
                                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
                                   {[c.city, c.state].filter(Boolean).join(', ')}
+                                </div>
+                              )}
+                              {getSocialLinks(c.socials).length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.35rem' }}>
+                                  {getSocialLinks(c.socials).map((l) => (
+                                    <a
+                                      key={l.platform}
+                                      href={l.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.05em',
+                                        textTransform: 'uppercase', padding: '0.2rem 0.5rem',
+                                        border: '1px solid var(--gold)', color: 'var(--gold)', textDecoration: 'none',
+                                      }}
+                                    >
+                                      {l.label} ↗
+                                    </a>
+                                  ))}
                                 </div>
                               )}
                             </div>
