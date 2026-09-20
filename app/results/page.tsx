@@ -188,8 +188,13 @@ export default async function ResultsPage() {
                               {i + 1}
                             </span>
                             <div style={{ minWidth: 0 }}>
+                              {i === 0 && (
+                                <div style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.1em', color: 'var(--gold)', marginBottom: '0.15rem' }}>
+                                  🥇 DIVISION CHAMPION
+                                </div>
+                              )}
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: i === 0 ? 'var(--gold)' : '#fff', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                <span style={{ fontSize: i === 0 ? '1.15rem' : '0.95rem', fontWeight: 700, color: i === 0 ? 'var(--gold)' : '#fff', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {c.display_name}
                                 </span>
                                 {i === vaIndex && (
@@ -211,7 +216,7 @@ export default async function ResultsPage() {
                           </div>
                           <span style={{
                             fontFamily: 'monospace', fontWeight: 800,
-                            fontSize: '1.05rem', color: i === 0 ? 'var(--gold)' : '#fff',
+                            fontSize: i === 0 ? '1.3rem' : '1.05rem', color: i === 0 ? 'var(--gold)' : '#fff',
                             flexShrink: 0, paddingLeft: '1rem',
                           }}>
                             {c.avg_total.toFixed(1)}
