@@ -121,6 +121,11 @@ export default async function ResultsPage() {
           <p style={{ color: 'var(--text-body)', margin: '0.5rem 0 0' }}>
             <a href="/results/run-order" style={{ color: 'var(--gold-light)' }}>See who&rsquo;s up next in the live run order →</a>
           </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 1.25rem', marginTop: '0.75rem' }}>
+            <a href="https://dmvthrowers.club/vsyc26-results.html" style={{ color: 'var(--gold-light)', fontSize: '0.85rem' }}>Full stats &amp; recap →</a>
+            <a href="https://www.youtube.com/live/yVLew1sJqNA" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold-light)', fontSize: '0.85rem' }}>Watch the livestream →</a>
+            <a href="https://compete.yoyocontest.com/results/2026-virginia-state-yo-yo-contest" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold-light)', fontSize: '0.85rem' }}>Official NYYL results →</a>
+          </div>
         </header>
 
         {resultsPublished && total > 0 && podium.length > 0 && (
