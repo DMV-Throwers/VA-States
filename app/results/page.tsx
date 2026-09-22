@@ -264,6 +264,9 @@ export default async function ResultsPage() {
             Scores are averaged across all judges. Questions about results?{' '}
             <a href="mailto:dmvthrowers@gmail.com" style={{ color: 'var(--gold-light)' }}>dmvthrowers@gmail.com</a>
           </p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: '0.5rem 0 0' }}>
+            <a href="https://drive.google.com/drive/folders/1K-sFb0YOjgnVcvtr4EryiwZAeXq7s6ho" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold-light)' }}>See raw judge scoring sheets →</a>
+          </p>
         </footer>
       </main>
       <Footer />
