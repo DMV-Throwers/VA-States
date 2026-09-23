@@ -11,6 +11,8 @@ export const maxDuration = 60;
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://register.dmvthrowers.club';
 const AUDIT_ACTION = 'survey_invites_sent';
+/** Where "Send test" goes. Override with SURVEY_TEST_EMAIL. */
+const TEST_EMAIL = process.env.SURVEY_TEST_EMAIL || 'dmvthrowers@gmail.com';
 
 const AUDIENCES: Record<string, { label: string; emailLabel: string; survey: string; extraLine?: string }> = {
   winner: {
@@ -111,7 +113,8 @@ export const GET = withErrorHandling(async (requestId, req: NextRequest) => {
 /**
  * POST /api/admin/surveys/invites
  *
- * Emails the survey link to one audience. Body: { audience, force? }.
+ * Emails the survey link to one audience. Body: { audience, force?, test? }.
+ * test: true sends only that audience's email to TEST_EMAIL, marked [TEST].
  * Refuses (409) if that audience was already sent to, unless force is true,
  * so a double-click never emails everyone twice.
  */
@@ -123,6 +126,26 @@ export const POST = withErrorHandling(async (requestId, req: NextRequest) => {
   const audience = body?.audience;
   if (!isAudience(audience)) {
     return apiError('bad_request', 'audience must be winner, competitor, spectator, or volunteer', requestId);
+  }
+
+  // Test send: the exact email this audience would get, to the organizer only.
+  // Logged separately so it never counts as the real send (or blocks it).
+  if (body?.test === true) {
+    const result = await sendSurveyInviteBatch({
+      audienceLabel: AUDIENCES[audience].emailLabel,
+      surveyUrl: `${BASE_URL}/survey/${AUDIENCES[audience].survey}?src=email`,
+      extraLine: AUDIENCES[audience].extraLine,
+      recipients: [{ to: TEST_EMAIL, firstName: 'Test' }],
+      isTest: true,
+    });
+    await logAudit('survey_invite_test_sent', {
+      actor: auth.email ?? 'admin',
+      details: { audience, to: TEST_EMAIL, ok: result.sent === 1 },
+    });
+    if (result.sent !== 1) {
+      return apiError('upstream_error', `Test email failed: ${result.failed[0]?.error ?? 'unknown error'}`, requestId);
+    }
+    return NextResponse.json({ ok: true, test: true, audience, to: TEST_EMAIL }, { headers: { 'x-request-id': requestId } });
   }
 
   const previous = await lastSentAt(audience);

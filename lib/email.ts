@@ -514,6 +514,8 @@ interface SurveyInviteBatchParams {
   /** Optional audience-specific paragraph, e.g. the prize ask for winners. */
   extraLine?: string;
   recipients: SurveyInviteRecipient[];
+  /** Admin preview: marks the subject so it can't be mistaken for a real send. */
+  isTest?: boolean;
 }
 
 export interface SurveyInviteBatchResult {
@@ -542,7 +544,7 @@ export async function sendSurveyInviteBatch(p: SurveyInviteBatchParams): Promise
           from: FROM,
           to: r.to,
           replyTo: REPLY_TO,
-          subject: 'How was VSYC-26? A few minutes to shape VSYC-27',
+          subject: `${p.isTest ? '[TEST] ' : ''}How was VSYC-26? A few minutes to shape VSYC-27`,
           html: buildSurveyInviteHtml(r.firstName, p.audienceLabel, p.surveyUrl, p.extraLine),
           text: buildSurveyInviteText(r.firstName, p.audienceLabel, p.surveyUrl, p.extraLine),
         })),

@@ -110,6 +110,25 @@ export default function SurveyResults({ token }: { token: string }) {
 
   useEffect(() => { void fetchData(); }, [fetchData]);
 
+  const sendTest = async (a: InviteAudience) => {
+    setSending(`test-${a.audience}`);
+    setStatusMsg(null);
+    try {
+      const res = await fetch('/api/admin/surveys/invites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ audience: a.audience, test: true }),
+      });
+      const json = await res.json();
+      setStatusMsg(res.ok
+        ? `Test ${TYPE_LABELS[a.audience].toLowerCase()} invite sent to ${json.to}. Check that inbox (and spam).`
+        : json.error?.message ?? 'Test send failed.');
+    } catch {
+      setStatusMsg('Network error sending test.');
+    }
+    setSending(null);
+  };
+
   const sendInvites = async (a: InviteAudience) => {
     const label = TYPE_LABELS[a.audience].toLowerCase();
     const resend = Boolean(a.lastSentAt);
@@ -335,6 +354,16 @@ export default function SurveyResults({ token }: { token: string }) {
                     {a.lastSentAt ? `Sent ${new Date(a.lastSentAt).toLocaleString()}` : 'Not sent yet'}
                   </div>
                 </div>
+                <span className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={sending !== null}
+                  onClick={() => void sendTest(a)}
+                  title="Send this group's exact email to the organizer inbox, marked [TEST]"
+                  className="border border-gold px-3 py-2 text-xs font-black tracking-caps text-gold hover:bg-gold hover:text-navy-deep disabled:opacity-40"
+                >
+                  {sending === `test-${a.audience}` ? 'SENDING…' : 'TEST'}
+                </button>
                 <button
                   type="button"
                   disabled={sending !== null || a.recipients === 0}
@@ -345,6 +374,7 @@ export default function SurveyResults({ token }: { token: string }) {
                 >
                   {sending === a.audience ? 'SENDING…' : a.lastSentAt ? 'RESEND' : 'SEND'}
                 </button>
+                </span>
               </li>
             ))}
             {!invites.length && !loading && <li className="text-xs text-text-muted">Invite list unavailable.</li>}
@@ -353,6 +383,7 @@ export default function SurveyResults({ token }: { token: string }) {
             Winners: top 3 per division from final results, sent the winner survey (competitor questions + prizes) instead of the
             competitor one. Competitors and winners also go to the parent email for minors. Volunteers: confirmed only.
             Spectators: everyone who RSVP&apos;d. Duplicate addresses get one email.
+            TEST sends that group&apos;s exact email to the organizer inbox (dmvthrowers@gmail.com) and doesn&apos;t count as sending.
           </p>
           {winners.length > 0 && (
             <details className="mt-3 border-t border-navy-border pt-3">
