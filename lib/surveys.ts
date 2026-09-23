@@ -233,8 +233,8 @@ function weekendSection({ includeVendorSpend = true } = {}): SurveySection {
       showIf: { key: 'vendor_visit', anyOf: ['Stopped and bought something'] },
     },
     {
-      key: 'merch_raffle', kind: 'multi', label: 'Did you buy any of these?', hint: 'Contest merch and raffle money funds future contests',
-      options: ['VSYC-26 contest merch (shirts, buttons, pronoun pins)', 'Bmore YoYo Club club merch', 'Raffle tickets', 'None of these'],
+      key: 'merch_bought', kind: 'multi', label: 'Did you buy any of these?', hint: 'Contest merch money funds future contests',
+      options: ['VSYC-26 contest merch (shirts, buttons, pronoun pins)', 'Bmore YoYo Club club merch', 'None of these'],
     },
     {
       key: 'miniso_store', kind: 'single', label: 'Did you visit the MINISO store in Dulles Town Center?',
@@ -432,7 +432,7 @@ const spectatorDay: SurveySection = {
       midpoints: { 'Under 30 minutes': 0.25, '30 min – 1 hour': 0.75, '1–3 hours': 2, '3+ hours': 4 },
       hideIf: STREAM_ONLY,
     },
-    { key: 'favorite_part', kind: 'multi', label: 'What did you enjoy most?', hint: 'Tap all that apply', options: ['Competitor routines', 'Closing ceremony / awards', 'Stella Duellum', 'Vendor tables', 'Maker Corner', 'Goodles booth', 'MINISO mascot', 'Nail painting at Bmore YoYo Club', 'Raffle', 'The crowd / energy'], hideIf: STREAM_ONLY },
+    { key: 'favorite_part', kind: 'multi', label: 'What did you enjoy most?', hint: 'Tap all that apply', options: ['Competitor routines', 'Closing ceremony / awards', 'Stella Duellum', 'Vendor tables', 'Maker Corner', 'Goodles booth', 'MINISO mascot', 'Nail painting at Bmore YoYo Club', 'The crowd / energy'], hideIf: STREAM_ONLY },
     { key: 'tools_used', kind: 'multi', label: 'Did you use any of these?', hint: 'Tap all that apply', options: TOOLS_USED },
     { key: 'come_back', kind: 'single', label: 'Would you come back next year?', options: ['Yes, and bring others', 'Yes', 'Maybe', 'No'], hideIf: STREAM_ONLY },
   ],
@@ -516,7 +516,7 @@ const sponsorDay: SurveySection = {
     },
     {
       key: 'sponsor_benefits_value', kind: 'multi', label: 'Which benefits were worth the most to you?', hint: 'Tap all that apply',
-      options: ['Table on the floor', 'MC shoutouts', 'Logo on banner and flyers', 'Livestream credit', 'Social media posts', 'Free competitor registrations', 'Raffle / prize placement'],
+      options: ['Table on the floor', 'MC shoutouts', 'Logo on banner and flyers', 'Livestream credit', 'Social media posts', 'Free competitor registrations', 'Prize placement (winner bags)'],
     },
     { key: 'value_rating', kind: 'scale5', label: 'Did we deliver on those goals for what you put in?', scaleLabels: RATING_LABELS },
     { key: 'sponsor_next_year', kind: 'single', label: 'Would you sponsor VSYC-27?', options: ['Yes, same tier', 'Yes, different tier', 'Maybe', 'No'] },
