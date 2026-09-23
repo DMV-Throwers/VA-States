@@ -20,6 +20,7 @@ Primary domain: <https://register.dmvthrowers.club>
 - Run-order management and results publishing controls
 - Stripe payment capture with webhook reconciliation
 - Policy page and event metadata for discoverability
+- Unlisted post-event feedback surveys (`/survey/competitor|spectator|volunteer|sponsor`) with an admin Surveys tab for results, CSV export, and email invites — questions live in `lib/surveys.ts`
 
 ## Local Setup
 
@@ -78,6 +79,8 @@ The app includes:
 - app/robots.ts: crawler directives and sitemap pointer
 - app/sitemap.ts: static route sitemap for key pages
 - app/layout.tsx metadata with canonical support via NEXT_PUBLIC_BASE_URL
+
+`/survey/*` pages are intentionally unlisted: `noindex`, not in the sitemap or nav.
 
 If the base domain changes, update NEXT_PUBLIC_BASE_URL and redeploy.
 
