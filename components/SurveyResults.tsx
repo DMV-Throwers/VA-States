@@ -172,6 +172,7 @@ export default function SurveyResults({ token }: { token: string }) {
       return { sum: vals.reduce((a, b) => a + b, 0), n: vals.length };
     };
     const vendorNext = str('vendor_next_year');
+    const vendorVisit = str('vendor_visit');
 
     return {
       overall: avg(num('overall_rating')),
@@ -201,6 +202,9 @@ export default function SurveyResults({ token }: { token: string }) {
       goodlesPrize: avg(num('goodles_prize_rating')),
       prizeTagged: prizePosted.filter((v) => v === 'Yes, tagged the sponsors').length,
       prizePostedN: prizePosted.length,
+      vendorStopped: vendorVisit.filter((v) => v !== "Didn't stop at a vendor").length,
+      vendorBought: vendorVisit.filter((v) => v === 'Stopped and bought something').length,
+      vendorVisitN: vendorVisit.length,
       vendorN: str('vendor_sales').length,
       vendorSales: midSum('vendor_sales'),
       vendorLocation: avg(num('vendor_location_rating')),
@@ -266,7 +270,8 @@ export default function SurveyResults({ token }: { token: string }) {
           <h3 className="text-xs font-black tracking-caps text-gold mb-3">SHARE LINKS</h3>
           <ul className="space-y-2 text-sm">
             {SURVEY_TYPES.map((t) => {
-              const live = `${baseUrl}/survey/${t}?src=${t === 'spectator' ? 'live' : 'direct'}`;
+              // Spectators get the short public link (redirects to /survey/spectator?src=live).
+              const live = t === 'spectator' ? `${baseUrl}/feedback` : `${baseUrl}/survey/${t}`;
               return (
                 <li key={t} className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-text-body">{TYPE_LABELS[t]}</span>
@@ -279,8 +284,8 @@ export default function SurveyResults({ token }: { token: string }) {
             })}
           </ul>
           <p className="text-xs text-text-muted mt-3">
-            The spectator link is the public live link for walk-ups who never RSVP&apos;d. Post it or put it on a QR code
-            (swap <code>src=live</code> for <code>src=qr</code> to track QR scans separately). Send vendors and sponsors
+            The spectator link is fully open: anyone can fill it in, registered or not. Post it or put it on a QR code
+            (use <code>/feedback?src=qr</code> on printed QR codes to count scans separately). Send vendors and sponsors
             their links directly. Vendors who also sponsored (Freshly Dirty) take the vendor survey. The winner link is only for podium finishers.
           </p>
         </div>
@@ -376,6 +381,8 @@ export default function SurveyResults({ token }: { token: string }) {
               <Stat label="Weekend spend" value={money(kpis.weekendSpend)} />
               <Stat label="At Dulles Town Center" value={money(kpis.dullesSpend)} />
               <Stat label="At vendor tables" value={money(kpis.vendorSpend)} note="Attendee-reported" />
+              <Stat label="Stopped at a vendor" value={pct(kpis.vendorStopped, kpis.vendorVisitN)} note={`${kpis.vendorStopped} of ${kpis.vendorVisitN}`} />
+              <Stat label="Bought from a vendor" value={pct(kpis.vendorBought, kpis.vendorVisitN)} note={`${kpis.vendorBought} of ${kpis.vendorVisitN}`} />
               <Stat label="At after-party" value={money(kpis.afterPartySpend)} />
             </div>
             <p className="text-xs text-text-muted mt-2">

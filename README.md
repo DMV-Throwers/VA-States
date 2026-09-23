@@ -20,7 +20,7 @@ Primary domain: <https://register.dmvthrowers.club>
 - Run-order management and results publishing controls
 - Stripe payment capture with webhook reconciliation
 - Policy page and event metadata for discoverability
-- Unlisted post-event feedback surveys (`/survey/competitor|winner|spectator|volunteer|vendor|sponsor`) with an admin Surveys tab for results, CSV export, and email invites — questions live in `lib/surveys.ts`
+- Post-event feedback surveys (spectator one is public at `/feedback` for walk-ups; the rest are unlisted) (`/survey/competitor|winner|spectator|volunteer|vendor|sponsor`) with an admin Surveys tab for results, CSV export, and email invites — questions live in `lib/surveys.ts`
 
 ## Local Setup
 

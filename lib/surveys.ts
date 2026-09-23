@@ -80,7 +80,9 @@ const DULLES_SPEND_MID: Record<string, number> = {
   '$0': 0, '$1–25': 13, '$25–75': 50, '$75–150': 113, '$150+': 175,
 };
 
-const VENDOR_SPEND = ['$0', '$1–25', '$25–75', '$75–150', '$150+'] as const;
+const VENDOR_SPEND = ['$1–25', '$25–75', '$75–150', '$150+'] as const;
+const VENDOR_VISIT = ['Stopped and bought something', "Stopped but didn't buy", "Didn't stop at a vendor"] as const;
+const VENDORS = ['Freshly Dirty', 'Jake Bullock', 'Slow n Steady'] as const;
 
 const AFTER_PARTY = ["Didn't go", 'Went · spent $0', 'Went · $1–20', 'Went · $20–50', 'Went · $50+'] as const;
 const AFTER_PARTY_MID: Record<string, number> = {
@@ -168,7 +170,16 @@ function weekendSection({ includeVendorSpend = true } = {}): SurveySection {
       hint: 'Tells the venue how many new visitors the contest brought in',
       options: ['No, I came for VSYC', 'Maybe', 'Yes, I would have been there anyway'],
     },
-    { key: 'vendor_spend', kind: 'single', label: 'How much did you spend at yo-yo vendor tables?', options: VENDOR_SPEND, midpoints: DULLES_SPEND_MID },
+    { key: 'vendor_visit', kind: 'single', label: 'Did you stop at a yo-yo vendor table?', options: VENDOR_VISIT },
+    {
+      key: 'vendors_visited', kind: 'multi', label: 'Which vendors?', hint: 'Tap all that apply', options: VENDORS,
+      showIf: { key: 'vendor_visit', anyOf: ['Stopped and bought something', "Stopped but didn't buy"] },
+    },
+    {
+      key: 'vendor_spend', kind: 'single', label: 'About how much did you spend at vendor tables?',
+      options: VENDOR_SPEND, midpoints: DULLES_SPEND_MID,
+      showIf: { key: 'vendor_visit', anyOf: ['Stopped and bought something'] },
+    },
     { key: 'amenities_used', kind: 'multi', label: 'Which amenities did you use?', hint: 'Tap all that apply', options: AMENITIES },
     {
       key: 'after_party', kind: 'single',
@@ -180,7 +191,10 @@ function weekendSection({ includeVendorSpend = true } = {}): SurveySection {
     id: 'weekend',
     title: 'Your Weekend',
     blurb: 'Rough guesses are fine. This shows venues and partners the real impact of the contest.',
-    questions: includeVendorSpend ? questions : questions.filter((q) => q.key !== 'vendor_spend'),
+    // Vendors don't get asked about shopping at their own tables.
+    questions: includeVendorSpend
+      ? questions
+      : questions.filter((q) => !['vendor_visit', 'vendors_visited', 'vendor_spend'].includes(q.key)),
   };
 }
 
