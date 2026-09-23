@@ -94,15 +94,12 @@ const DULLES_SPEND_MID: Record<string, number> = {
 
 const VENDOR_SPEND = ['$1–25', '$25–75', '$75–150', '$150+'] as const;
 const VENDOR_VISIT = ['Stopped and bought something', "Stopped but didn't buy", "Didn't stop at a vendor"] as const;
-// Matches "Who's Tabling" on dmvthrowers.club/vsyc26-merch.html.
-const VENDORS = [
-  'Freshly Dirty',
-  'Recess & Jake Bullock',
-  'Slow & Steady Bikes and Goods',
-  'YoYoSam.com',
-  'Unparalleled',
-  'Bmore YoYo Club',
-] as const;
+// Who actually tabled and sold product on the day (confirmed after the event —
+// the site's "Who's Tabling" list was longer than who showed up).
+// Recess and Jake Bullock shared one booth: one option for shoppers, separate
+// options for the vendors themselves so each can answer.
+const VENDORS = ['Freshly Dirty', 'Recess & Jake Bullock (shared booth)', 'Slow & Steady Bikes and Goods'] as const;
+const VENDOR_RESPONDENTS = ['Freshly Dirty', 'Recess', 'Jake Bullock', 'Slow & Steady Bikes and Goods'] as const;
 
 const AFTER_PARTY = ["Didn't know about it", "Didn't go", 'Went · spent $0', 'Went · $1–20', 'Went · $20–50', 'Went · $50+'] as const;
 const AFTER_PARTY_MID: Record<string, number> = {
@@ -129,12 +126,11 @@ const GOODLES_FAMILIARITY = [
   'Buy it regularly',
 ] as const;
 const GOODLES_BOOTH = ['Stopped by', "Saw it, didn't stop", "Didn't notice it"] as const;
-// What the Twirly Tour booth actually did on the day: postcards to get a Goodles
-// shirt + Mac mailed out, stickers and temporary tattoos. (No Twirl for a Prize.)
+// What the Goodles giveaway booth actually did on the day: postcards to get a
+// shirt + Mac mailed out, stickers and temporary tattoos. (No Twirl for a Prize, no sampling.)
 const GOODLES_ACTIVITIES = [
   'Filled out a postcard for a free shirt + Mac',
   'Got stickers or temporary tattoos',
-  'Tried a sample',
   'Took a photo',
   'Talked with the Goodles team',
   'Followed Goodles on social',
@@ -232,11 +228,11 @@ function weekendSection({ includeVendorSpend = true } = {}): SurveySection {
     },
     {
       key: 'merch_raffle', kind: 'multi', label: 'Did you buy any of these?', hint: 'Merch and raffle money funds future contests',
-      options: ['VSYC-26 merch (buttons, tees)', 'Raffle tickets', 'Bmore YoYo Club merch', 'Pronoun pins', 'None of these'],
+      options: ['VSYC-26 merch (buttons, tees)', 'Raffle tickets', 'None of these'],
     },
     {
       key: 'miniso_store', kind: 'single', label: 'Did you visit the MINISO store in Dulles Town Center?',
-      hint: 'MINISO donated raffle prizes and sent their mascot',
+      hint: 'MINISO sent their mascot to the contest',
       options: ['Yes, and bought something', 'Yes, just looked', 'No'],
     },
     { key: 'amenities_used', kind: 'multi', label: 'Which amenities did you use that day?', hint: 'Tap all that apply', options: AMENITIES },
@@ -268,7 +264,7 @@ function goodlesSection(sponsorView = false): SurveySection {
     questions: [
       { key: 'goodles_familiarity', kind: 'single', label: 'Before VSYC-26, how well did you know Goodles?', options: GOODLES_FAMILIARITY, required: !sponsorView },
       {
-        key: 'goodles_booth', kind: 'single', label: 'Did you stop by the Goodles Twirly Tour booth?', hint: 'Postcards for a free shirt + Mac, stickers, temporary tattoos',
+        key: 'goodles_booth', kind: 'single', label: 'Did you stop by the Goodles giveaway booth?', hint: 'Postcards for a free shirt + Mac, stickers, temporary tattoos',
         options: GOODLES_BOOTH, required: !sponsorView, hideIf: STREAM_ONLY,
       },
       {
@@ -575,7 +571,7 @@ const vendorDay: SurveySection = {
   title: 'Your Table',
   blurb: 'Your numbers stay private. We only share totals across all vendors.',
   questions: [
-    { key: 'vendor_name', kind: 'single', label: 'Which vendor are you?', options: [...VENDORS, 'Other'], required: true },
+    { key: 'vendor_name', kind: 'single', label: 'Which vendor are you?', options: [...VENDOR_RESPONDENTS, 'Other'], required: true },
     { key: 'vendor_name_other', kind: 'short', label: 'Vendor name', maxLength: 120, showIf: { key: 'vendor_name', anyOf: ['Other'] } },
     { key: 'vendor_sales', kind: 'single', label: 'About how much did you sell (gross)?', options: SALES, midpoints: SALES_MID, required: true },
     { key: 'vendor_vs_expectations', kind: 'single', label: 'How did sales compare to what you expected?', options: ['Beat expectations', 'About what we expected', 'Below expectations'] },
