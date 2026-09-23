@@ -97,7 +97,7 @@ export default function Footer() {
           </a>
 
           {/* Links */}
-          <nav aria-label="Footer navigation">
+          <nav aria-label="Footer navigation" style={{ display: 'flex', flexWrap: 'wrap', rowGap: 8, maxWidth: '100%' }}>
             {FOOTER_LINKS.map(link => (
               <a
                 key={link.label}

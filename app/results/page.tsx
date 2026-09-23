@@ -2,76 +2,12 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getEventFlagBoolean } from '@/lib/event-flags';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
+import { DIVISIONS, fetchStandings, type Division, type Standing } from '@/lib/standings';
 
 // Public results are gated with an admin-toggleable flag and env fallback.
 
-const DIVISIONS: { code: Division; label: string }[] = [
-  { code: '1A',  label: '1A — Single String' },
-  { code: 'X',   label: 'X Division' },
-  { code: 'SBJ', label: 'Sport / Beginner / Junior' },
-];
-
-type Division = '1A' | 'X' | 'SBJ';
-
-interface ResultRow {
-  registration_id: string;
-  division: string;
-  display_name: string;
-  city: string | null;
-  state: string | null;
-  final_score: number | string;
-}
-
-interface Standing {
-  registration_id: string;
-  display_name: string;
-  city: string | null;
-  state: string | null;
-  judge_count: number;
-  avg_total: number;
-}
-
 async function getStandings(): Promise<Record<Division, Standing[]>> {
-  const empty: Record<Division, Standing[]> = { '1A': [], X: [], SBJ: [] };
-  const supabase = createAdminClient();
-
-  const { data, error } = await supabase.from('vsyc_results').select('*');
-  if (error || !data) return empty;
-
-  const grouped: Record<Division, Map<string, { s: Standing; sum: number }>> = {
-    '1A': new Map(), X: new Map(), SBJ: new Map(),
-  };
-
-  for (const row of data as ResultRow[]) {
-    const div = row.division as Division;
-    if (!grouped[div]) continue;
-    if (!grouped[div].has(row.registration_id)) {
-      grouped[div].set(row.registration_id, {
-        s: {
-          registration_id: row.registration_id,
-          display_name: row.display_name,
-          city: row.city,
-          state: row.state,
-          judge_count: 0,
-          avg_total: 0,
-        },
-        sum: 0,
-      });
-    }
-    const entry = grouped[div].get(row.registration_id)!;
-    entry.s.judge_count += 1;
-    entry.sum += Number(row.final_score);
-  }
-
-  const result: Record<Division, Standing[]> = { '1A': [], X: [], SBJ: [] };
-  for (const { code } of DIVISIONS) {
-    for (const { s, sum } of grouped[code].values()) {
-      s.avg_total = s.judge_count > 0 ? Math.round((sum / s.judge_count) * 100) / 100 : 0;
-      result[code].push(s);
-    }
-    result[code].sort((a, b) => b.avg_total - a.avg_total);
-  }
-  return result;
+  return fetchStandings(createAdminClient());
 }
 
 // Refresh at most once per minute once published.

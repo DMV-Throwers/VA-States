@@ -500,3 +500,93 @@ function buildVolunteerConfirmedText(p: VolunteerConfirmedParams): string {
     `Questions about your role or shift? Reply to this email — it goes straight to the organizer.`,
   ].join('\n');
 }
+
+// ─── Post-event survey invites ───────────────────────────────────────────────
+
+export interface SurveyInviteRecipient {
+  to: string;
+  firstName: string;
+}
+
+interface SurveyInviteBatchParams {
+  audienceLabel: string;
+  surveyUrl: string;
+  /** Optional audience-specific paragraph, e.g. the prize ask for winners. */
+  extraLine?: string;
+  recipients: SurveyInviteRecipient[];
+  /** Admin preview: marks the subject so it can't be mistaken for a real send. */
+  isTest?: boolean;
+}
+
+export interface SurveyInviteBatchResult {
+  sent: number;
+  failed: { email: string; error: string }[];
+}
+
+/**
+ * Sends the post-event survey link to a list of recipients using Resend's
+ * batch endpoint (100 emails per request), so a few hundred invites finish
+ * well inside the serverless function timeout. One email per recipient —
+ * nobody sees anyone else's address.
+ */
+export async function sendSurveyInviteBatch(p: SurveyInviteBatchParams): Promise<SurveyInviteBatchResult> {
+  if (!canSendEmail()) {
+    return { sent: 0, failed: p.recipients.map((r) => ({ email: r.to, error: 'resend_not_configured' })) };
+  }
+  const resend = getResend();
+  const result: SurveyInviteBatchResult = { sent: 0, failed: [] };
+
+  for (let i = 0; i < p.recipients.length; i += 100) {
+    const chunk = p.recipients.slice(i, i + 100);
+    try {
+      const { error } = await resend.batch.send(
+        chunk.map((r) => ({
+          from: FROM,
+          to: r.to,
+          replyTo: REPLY_TO,
+          subject: `${p.isTest ? '[TEST] ' : ''}How was VSYC-26? A few minutes to shape VSYC-27`,
+          html: buildSurveyInviteHtml(r.firstName, p.audienceLabel, p.surveyUrl, p.extraLine),
+          text: buildSurveyInviteText(r.firstName, p.audienceLabel, p.surveyUrl, p.extraLine),
+        })),
+      );
+      if (error) {
+        result.failed.push(...chunk.map((r) => ({ email: r.to, error: error.message })));
+      } else {
+        result.sent += chunk.length;
+      }
+    } catch (e) {
+      result.failed.push(...chunk.map((r) => ({ email: r.to, error: String(e) })));
+    }
+  }
+
+  return result;
+}
+
+function buildSurveyInviteHtml(firstName: string, audienceLabel: string, surveyUrl: string, extraLine?: string): string {
+  const url = esc(surveyUrl);
+  return emailWrap(`
+    <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;color:#ffffff;margin:0 0 16px;">Thank you, ${esc(firstName)}.</h1>
+    <p style="font-size:0.95rem;line-height:1.6;margin:0 0 16px;">VSYC-26 happened because of ${esc(audienceLabel)} like you. Now we want to hear how it went: what worked, what didn't, and what would bring you back.</p>
+    ${extraLine ? `<p style="font-size:0.95rem;line-height:1.6;margin:0 0 16px;color:#e8c97a;">${esc(extraLine)}</p>` : ''}
+    <p style="font-size:0.95rem;line-height:1.6;margin:0 0 24px;">It only takes a few minutes. Every answer goes straight into planning VSYC-27.</p>
+    <a href="${url}" style="display:inline-block;background:#B80000;color:#ffffff;text-decoration:none;font-weight:800;letter-spacing:0.12em;font-size:0.8rem;padding:14px 28px;">TAKE THE SURVEY →</a>
+    <p style="font-size:0.75rem;color:#8090b8;margin:24px 0 0;">Or paste this link: <a href="${url}" style="color:#C9A84C;">${url}</a></p>
+    <p style="font-size:0.75rem;color:#8090b8;margin:16px 0 0;">VSYC-26 was brought to you by Goodles.</p>
+  `);
+}
+
+function buildSurveyInviteText(firstName: string, audienceLabel: string, surveyUrl: string, extraLine?: string): string {
+  return [
+    `Thank you, ${firstName}.`,
+    '',
+    `VSYC-26 happened because of ${audienceLabel} like you. Now we want to hear how it went: what worked, what didn't, and what would bring you back.`,
+    '',
+    ...(extraLine ? [extraLine, ''] : []),
+    'It only takes a few minutes. Every answer goes straight into planning VSYC-27.',
+    '',
+    `Take the survey: ${surveyUrl}`,
+    '',
+    'VSYC-26 was brought to you by Goodles.',
+    'September 19, 2026 · Dulles Town Center · Sterling, VA',
+  ].join('\n');
+}

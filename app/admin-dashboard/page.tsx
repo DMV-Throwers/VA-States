@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import RunOrderManager from '@/components/RunOrderManager';
 import VolunteerManager from '@/components/VolunteerManager';
 import BudgetManager from '@/components/BudgetManager';
+import SurveyResults from '@/components/SurveyResults';
 import { createBrowserClient } from '@/lib/supabase/client';
 
 interface StaffMe {
@@ -121,7 +122,7 @@ export default function AdminDashboardPage() {
 
   const [contestantQuery, setContestantQuery] = useState('');
   const [spectatorQuery, setSpectatorQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'overview' | 'run-order' | 'volunteers' | 'budget'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'run-order' | 'volunteers' | 'budget' | 'surveys'>('overview');
 
   const fetchStaffMe = async (accessToken: string): Promise<StaffMe | null> => {
     const res = await fetch('/api/staff/me', {
@@ -601,17 +602,17 @@ export default function AdminDashboardPage() {
           </div>
         </header>
 
-        <nav className="flex gap-2 mb-6 border-b border-navy-border">
-          {(['overview', 'run-order', 'volunteers', 'budget'] as const).map((tab) => (
+        <nav className="flex gap-2 mb-6 border-b border-navy-border overflow-x-auto">
+          {(['overview', 'run-order', 'volunteers', 'budget', 'surveys'] as const).map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-xs font-black tracking-caps border-b-2 -mb-px ${
+              className={`px-4 py-2 text-xs font-black tracking-caps border-b-2 -mb-px whitespace-nowrap ${
                 activeTab === tab ? 'border-gold text-gold' : 'border-transparent text-text-muted hover:text-text-body'
               }`}
             >
-              {tab === 'overview' ? 'Overview' : tab === 'run-order' ? 'Run Order' : tab === 'volunteers' ? 'Volunteers' : 'Budget'}
+              {tab === 'overview' ? 'Overview' : tab === 'run-order' ? 'Run Order' : tab === 'volunteers' ? 'Volunteers' : tab === 'budget' ? 'Budget' : 'Surveys'}
             </button>
           ))}
         </nav>
@@ -633,6 +634,12 @@ export default function AdminDashboardPage() {
         {activeTab === 'budget' && token && (
           <section className="border border-navy-border bg-navy p-4">
             <BudgetManager token={token} />
+          </section>
+        )}
+
+        {activeTab === 'surveys' && token && (
+          <section className="border border-navy-border bg-navy p-4">
+            <SurveyResults token={token} />
           </section>
         )}
 
