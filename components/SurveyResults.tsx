@@ -154,7 +154,7 @@ export default function SurveyResults({ token }: { token: string }) {
 
     const midSum = (k: string) => {
       const q = questions.find((x) => x.q.key === k)?.q;
-      return str(k).reduce((sum, v) => sum + (q?.dollarMidpoints?.[v] ?? 0), 0);
+      return str(k).reduce((sum, v) => sum + (q?.midpoints?.[v] ?? 0), 0);
     };
 
     const familiarity = str('goodles_familiarity');
@@ -164,6 +164,13 @@ export default function SurveyResults({ token }: { token: string }) {
     const moreLikely = intent.filter((v) => v === 'Much more likely' || v === 'A bit more likely').length;
     const hotelNights = str('hotel_nights').reduce((s, v) => s + (HOTEL_NIGHTS[v] ?? 0), 0);
     const prizePosted = str('prize_posted');
+    const incremental = str('dulles_incremental');
+    const ages = filtered.map((r) => r.answers.group_ages).filter((v): v is string[] => Array.isArray(v));
+    const hoursQ = (k: string) => {
+      const q = questions.find((x) => x.q.key === k)?.q;
+      const vals = str(k).map((v) => q?.midpoints?.[v]).filter((n): n is number => typeof n === 'number');
+      return { sum: vals.reduce((a, b) => a + b, 0), n: vals.length };
+    };
     const vendorNext = str('vendor_next_year');
 
     return {
@@ -182,6 +189,12 @@ export default function SurveyResults({ token }: { token: string }) {
       moreLikely,
       intentN: intent.length,
       boothRating: avg(num('goodles_booth_rating')),
+      cameForVsyc: incremental.filter((v) => v === 'No, I came for VSYC').length,
+      incrementalN: incremental.length,
+      withKids: ages.filter((a) => a.includes('Kids under 12') || a.includes('Teens 13–17')).length,
+      agesN: ages.length,
+      volunteerHours: hoursQ('volunteer_hours'),
+      dwell: hoursQ('time_on_site'),
       hasPrizes: str('placement').length > 0,
       prizeOverall: avg(num('prize_overall_rating')),
       miniso: avg(num('miniso_basket_rating')),
@@ -346,12 +359,20 @@ export default function SurveyResults({ token }: { token: string }) {
               <Stat label="Avg overall rating" value={kpis.overall ? `${kpis.overall.toFixed(1)} / 5` : '—'} />
               <Stat label="NPS" value={kpis.npsScore === null ? '—' : String(kpis.npsScore)} note={`${kpis.npsN} answers · −100 to 100`} />
               <Stat label="Hotel nights" value={String(kpis.hotelNights)} note="Sum reported" />
+              {kpis.volunteerHours.n > 0 && (
+                <Stat label="Volunteer hours" value={String(Math.round(kpis.volunteerHours.sum))} note={`${kpis.volunteerHours.n} volunteers, bucket midpoints`} />
+              )}
+              {kpis.dwell.n > 0 && (
+                <Stat label="Avg spectator stay" value={`${(kpis.dwell.sum / kpis.dwell.n).toFixed(1)} hrs`} note={`${kpis.dwell.n} spectators`} />
+              )}
             </div>
           </section>
 
           <section>
             <h3 className="text-xs font-black tracking-caps text-gold mb-3">ECONOMIC IMPACT (ESTIMATED)</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <Stat label="Came just for VSYC" value={pct(kpis.cameForVsyc, kpis.incrementalN)} note={`${kpis.cameForVsyc} of ${kpis.incrementalN} wouldn't have visited the mall`} />
+              <Stat label="Groups with kids / teens" value={pct(kpis.withKids, kpis.agesN)} note={`${kpis.withKids} of ${kpis.agesN}`} />
               <Stat label="Weekend spend" value={money(kpis.weekendSpend)} />
               <Stat label="At Dulles Town Center" value={money(kpis.dullesSpend)} />
               <Stat label="At vendor tables" value={money(kpis.vendorSpend)} note="Attendee-reported" />
@@ -368,7 +389,7 @@ export default function SurveyResults({ token }: { token: string }) {
               <Stat label="New to Goodles" value={pct(kpis.newToGoodles, kpis.familiarityN)} note={`${kpis.newToGoodles} of ${kpis.familiarityN} hadn't tried it`} />
               <Stat label="Stopped at booth" value={pct(kpis.boothVisited, kpis.boothN)} note={`${kpis.boothVisited} of ${kpis.boothN}`} />
               <Stat label="Booth rating" value={kpis.boothRating ? `${kpis.boothRating.toFixed(1)} / 5` : '—'} />
-              <Stat label="More likely to buy" value={pct(kpis.moreLikely, kpis.intentN)} note={`${kpis.moreLikely} of ${kpis.intentN}`} />
+              <Stat label="More likely to buy" value={pct(kpis.moreLikely, kpis.intentN)} note={`${kpis.moreLikely} of ${kpis.intentN} not already regular buyers`} />
             </div>
           </section>
 

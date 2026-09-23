@@ -542,7 +542,7 @@ export async function sendSurveyInviteBatch(p: SurveyInviteBatchParams): Promise
           from: FROM,
           to: r.to,
           replyTo: REPLY_TO,
-          subject: 'How was VSYC-26? 4 minutes to shape VSYC-27',
+          subject: 'How was VSYC-26? A few minutes to shape VSYC-27',
           html: buildSurveyInviteHtml(r.firstName, p.audienceLabel, p.surveyUrl, p.extraLine),
           text: buildSurveyInviteText(r.firstName, p.audienceLabel, p.surveyUrl, p.extraLine),
         })),
@@ -566,7 +566,7 @@ function buildSurveyInviteHtml(firstName: string, audienceLabel: string, surveyU
     <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;color:#ffffff;margin:0 0 16px;">Thank you, ${esc(firstName)}.</h1>
     <p style="font-size:0.95rem;line-height:1.6;margin:0 0 16px;">VSYC-26 happened because of ${esc(audienceLabel)} like you. Now we want to hear how it went: what worked, what didn't, and what would bring you back.</p>
     ${extraLine ? `<p style="font-size:0.95rem;line-height:1.6;margin:0 0 16px;color:#e8c97a;">${esc(extraLine)}</p>` : ''}
-    <p style="font-size:0.95rem;line-height:1.6;margin:0 0 24px;">It takes about 4 minutes. Every answer goes straight into planning VSYC-27.</p>
+    <p style="font-size:0.95rem;line-height:1.6;margin:0 0 24px;">It only takes a few minutes. Every answer goes straight into planning VSYC-27.</p>
     <a href="${url}" style="display:inline-block;background:#B80000;color:#ffffff;text-decoration:none;font-weight:800;letter-spacing:0.12em;font-size:0.8rem;padding:14px 28px;">TAKE THE SURVEY →</a>
     <p style="font-size:0.75rem;color:#8090b8;margin:24px 0 0;">Or paste this link: <a href="${url}" style="color:#C9A84C;">${url}</a></p>
     <p style="font-size:0.75rem;color:#8090b8;margin:16px 0 0;">VSYC-26 was brought to you by Goodles.</p>
@@ -580,7 +580,7 @@ function buildSurveyInviteText(firstName: string, audienceLabel: string, surveyU
     `VSYC-26 happened because of ${audienceLabel} like you. Now we want to hear how it went: what worked, what didn't, and what would bring you back.`,
     '',
     ...(extraLine ? [extraLine, ''] : []),
-    'It takes about 4 minutes. Every answer goes straight into planning VSYC-27.',
+    'It only takes a few minutes. Every answer goes straight into planning VSYC-27.',
     '',
     `Take the survey: ${surveyUrl}`,
     '',
