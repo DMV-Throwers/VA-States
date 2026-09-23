@@ -17,7 +17,7 @@ const AUDIENCES: Record<string, { label: string; emailLabel: string; survey: str
     label: 'podium finishers and VA State Champions',
     emailLabel: 'competitors',
     survey: 'winner',
-    extraLine: 'You placed, so we also want to hear what you thought of your prizes, including the MINISO basket and the Goodles additions.',
+    extraLine: 'You placed, so we also want to hear what you thought of your prizes, including the Goodles shirt and Mac, the MINISO basket, and the sponsor gear.',
   },
   competitor: { label: 'competitors', emailLabel: 'competitors', survey: 'competitor' },
   spectator: { label: 'spectators', emailLabel: 'spectators', survey: 'spectator' },

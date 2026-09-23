@@ -175,6 +175,8 @@ export default function SurveyResults({ token }: { token: string }) {
     const vendorVisit = str('vendor_visit');
     const watch = str('watch_mode');
     const reliability = str('stream_reliability');
+    const groupRate = str('hotel_group_rate');
+    const postcard = str('goodles_postcard_arrived');
     const duelCompeted = str('duel_competed');
     const duelWatched = str('duel_watched');
     const duelBack = str('duel_next_year');
@@ -221,6 +223,13 @@ export default function SurveyResults({ token }: { token: string }) {
       reliabilityN: reliability.length,
       streamComeInPerson: str('stream_attend_next').filter((v) => v === 'Yes, planning on it').length,
       streamAttendN: str('stream_attend_next').length,
+      blockUsed: groupRate.filter((v) => v === 'Knew about it and used it').length,
+      blockUnaware: groupRate.filter((v) => v === "Didn't know there was one").length,
+      groupRateN: groupRate.length,
+      blockRating: avg(num('hotel_block_rating')),
+      postcardArrived: postcard.filter((v) => v === 'Yes').length,
+      postcardN: postcard.length,
+      gearPrize: avg(num('gear_prize_rating')),
       duelN: duelCompeted.length,
       duelPlayers: duelCompeted.filter((v) => v === 'Yes').length,
       duelWatchers: duelWatched.filter((v) => v.startsWith('Watched')).length,
@@ -389,6 +398,7 @@ export default function SurveyResults({ token }: { token: string }) {
               <Stat label="Avg overall rating" value={kpis.overall ? `${kpis.overall.toFixed(1)} / 5` : '—'} />
               <Stat label="NPS" value={kpis.npsScore === null ? '—' : String(kpis.npsScore)} note={`${kpis.npsN} answers · −100 to 100`} />
               <Stat label="Hotel nights" value={String(kpis.hotelNights)} note="Sum reported" />
+              <Stat label="Used the Marriott block" value={pct(kpis.blockUsed, kpis.groupRateN)} note={`${kpis.blockUsed} used · ${kpis.blockUnaware} didn't know · stay ${kpis.blockRating ? kpis.blockRating.toFixed(1) : '—'}/5`} />
               {kpis.volunteerHours.n > 0 && (
                 <Stat label="Volunteer hours" value={String(Math.round(kpis.volunteerHours.sum))} note={`${kpis.volunteerHours.n} volunteers, bucket midpoints`} />
               )}
@@ -420,7 +430,7 @@ export default function SurveyResults({ token }: { token: string }) {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Stat label="New to Goodles" value={pct(kpis.newToGoodles, kpis.familiarityN)} note={`${kpis.newToGoodles} of ${kpis.familiarityN} hadn't tried it`} />
               <Stat label="Stopped at booth" value={pct(kpis.boothVisited, kpis.boothN)} note={`${kpis.boothVisited} of ${kpis.boothN}`} />
-              <Stat label="Booth rating" value={kpis.boothRating ? `${kpis.boothRating.toFixed(1)} / 5` : '—'} />
+              <Stat label="Booth rating" value={kpis.boothRating ? `${kpis.boothRating.toFixed(1)} / 5` : '—'} note={kpis.postcardN ? `${kpis.postcardArrived} of ${kpis.postcardN} postcard shirts + Mac arrived` : undefined} />
               <Stat label="More likely to buy" value={pct(kpis.moreLikely, kpis.intentN)} note={`${kpis.moreLikely} of ${kpis.intentN} not already regular buyers`} />
             </div>
           </section>
@@ -456,7 +466,8 @@ export default function SurveyResults({ token }: { token: string }) {
               <h3 className="text-xs font-black tracking-caps text-gold mb-3">PRIZES (WINNERS)</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Stat label="Prize package" value={kpis.prizeOverall ? `${kpis.prizeOverall.toFixed(1)} / 5` : '—'} />
-                <Stat label="Miniso basket" value={kpis.miniso ? `${kpis.miniso.toFixed(1)} / 5` : '—'} />
+                <Stat label="MINISO basket" value={kpis.miniso ? `${kpis.miniso.toFixed(1)} / 5` : '—'} />
+                <Stat label="Sponsor gear (yo-yo, string, kendama)" value={kpis.gearPrize ? `${kpis.gearPrize.toFixed(1)} / 5` : '—'} />
                 <Stat label="Goodles additions" value={kpis.goodlesPrize ? `${kpis.goodlesPrize.toFixed(1)} / 5` : '—'} />
                 <Stat label="Posted + tagged sponsors" value={pct(kpis.prizeTagged, kpis.prizePostedN)} note={`${kpis.prizeTagged} of ${kpis.prizePostedN}`} />
               </div>

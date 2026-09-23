@@ -80,6 +80,7 @@ const TRAVEL = ['Under 1 hour', '1–2 hours', '2–4 hours', '4+ hours', 'Flew 
 const GROUP_SIZE = ['Just me', '2', '3–4', '5+'] as const;
 const HOTEL_NIGHTS = ['0 · Day trip', '1 night', '2 nights', '3+ nights'] as const;
 const GROUP_RATE = ['Knew about it and used it', "Knew about it, didn't use it", "Didn't know there was one"] as const;
+const STAYED_OVER: Condition = { key: 'hotel_nights', anyOf: ['1 night', '2 nights', '3+ nights'] };
 
 const WEEKEND_SPEND = ['Under $50', '$50–100', '$100–250', '$250–500', '$500+'] as const;
 const WEEKEND_SPEND_MID: Record<string, number> = {
@@ -128,12 +129,12 @@ const GOODLES_FAMILIARITY = [
   'Buy it regularly',
 ] as const;
 const GOODLES_BOOTH = ['Stopped by', "Saw it, didn't stop", "Didn't notice it"] as const;
-// Matches the Twirly Tour stop: sampling cart, stickers + temporary tattoos, Twirl for a Prize.
+// What the Twirly Tour booth actually did on the day: postcards to get a Goodles
+// shirt + Mac mailed out, stickers and temporary tattoos. (No Twirl for a Prize.)
 const GOODLES_ACTIVITIES = [
-  'Tried a Twirly Mac sample',
-  'Played Twirl for a Prize',
+  'Filled out a postcard for a free shirt + Mac',
   'Got stickers or temporary tattoos',
-  'Took product home',
+  'Tried a sample',
   'Took a photo',
   'Talked with the Goodles team',
   'Followed Goodles on social',
@@ -182,8 +183,26 @@ function weekendSection({ includeVendorSpend = true } = {}): SurveySection {
     { key: 'travel_time', kind: 'single', label: 'How long was your trip to the contest (one way)?', options: TRAVEL },
     { key: 'group_size', kind: 'single', label: 'Including you, how many people were in your group?', options: GROUP_SIZE },
     { key: 'group_ages', kind: 'multi', label: 'Who was in your group?', hint: 'Tap all that apply', options: GROUP_AGES },
-    { key: 'hotel_nights', kind: 'single', label: 'How many nights did you stay at a local hotel?', options: HOTEL_NIGHTS },
+    { key: 'hotel_nights', kind: 'single', label: 'How many nights did you stay overnight nearby?', options: HOTEL_NIGHTS },
+    {
+      key: 'hotel_where', kind: 'single', label: 'Where did you stay?',
+      options: ['Courtyard by Marriott Dulles Town Center', 'Candlewood Suites Sterling', 'Another hotel', 'Airbnb / rental', 'Friends or family'],
+      showIf: STAYED_OVER,
+    },
     { key: 'hotel_group_rate', kind: 'single', label: 'VA States had a $125 room block at the Courtyard by Marriott Dulles Town Center. Did you know about it?', options: GROUP_RATE },
+    {
+      key: 'hotel_block_why_not', kind: 'single', label: 'What kept you from using the room block?',
+      options: ['Booked too late (it closed Aug 29)', 'Found a better price', 'Wanted a different hotel', 'Stayed with friends or family', 'Didn\u2019t need a room', 'Other'],
+      showIf: { key: 'hotel_group_rate', anyOf: ["Knew about it, didn't use it"] },
+    },
+    {
+      key: 'hotel_block_rating', kind: 'scale5', label: 'How was your stay at the Courtyard?', hint: 'Booking, room, location, shuttle',
+      scaleLabels: RATING_LABELS, showIf: { key: 'hotel_group_rate', anyOf: ['Knew about it and used it'] },
+    },
+    {
+      key: 'hotel_block_next', kind: 'single', label: 'Would you use a room block again next year?',
+      options: ['Yes, same hotel', 'Yes, but a cheaper option', 'Maybe', 'No'], showIf: STAYED_OVER,
+    },
     {
       key: 'weekend_spend', kind: 'single',
       label: 'About how much did your group spend on the trip?',
@@ -249,7 +268,7 @@ function goodlesSection(sponsorView = false): SurveySection {
     questions: [
       { key: 'goodles_familiarity', kind: 'single', label: 'Before VSYC-26, how well did you know Goodles?', options: GOODLES_FAMILIARITY, required: !sponsorView },
       {
-        key: 'goodles_booth', kind: 'single', label: 'Did you stop by the Goodles Twirly Tour booth?', hint: 'The Twirly Mac sampling cart',
+        key: 'goodles_booth', kind: 'single', label: 'Did you stop by the Goodles Twirly Tour booth?', hint: 'Postcards for a free shirt + Mac, stickers, temporary tattoos',
         options: GOODLES_BOOTH, required: !sponsorView, hideIf: STREAM_ONLY,
       },
       {
@@ -259,6 +278,10 @@ function goodlesSection(sponsorView = false): SurveySection {
       {
         key: 'goodles_activities', kind: 'multi', label: 'What did you do there?', hint: 'Tap all that apply',
         options: GOODLES_ACTIVITIES, showIf: { key: 'goodles_booth', anyOf: ['Stopped by'] },
+      },
+      {
+        key: 'goodles_postcard_arrived', kind: 'single', label: 'Has your Goodles shirt and Mac arrived?',
+        options: ['Yes', 'Not yet'], showIf: { key: 'goodles_activities', anyOf: ['Filled out a postcard for a free shirt + Mac'] },
       },
       {
         key: 'goodles_booth_rating', kind: 'scale5',
@@ -389,7 +412,7 @@ const spectatorDay: SurveySection = {
   id: 'day',
   title: 'Your Day',
   questions: [
-    { key: 'watch_mode', kind: 'single', label: 'How did you watch VSYC-26?', options: WATCH_MODES, required: true },
+    { key: 'watch_mode', kind: 'single', label: 'How did you watch VSYC-26?', hint: 'The livestream counts whether you watched live or the replay', options: WATCH_MODES, required: true },
     {
       key: 'heard_from', kind: 'single', label: 'How did you hear about VSYC-26?',
       options: ['Came with a competitor', 'Friend or family', 'Instagram / social', 'YouTube / YoYo Contest Central', 'DMV Throwers club', 'Walking by at the mall', 'Poster or flyer', 'Goodles', 'Other'],
@@ -413,10 +436,10 @@ const spectatorDay: SurveySection = {
 const streamSection: SurveySection = {
   id: 'stream',
   title: 'The Livestream',
-  blurb: 'The YoYo Contest Central stream on YouTube.',
+  blurb: 'The YoYo Contest Central stream on YouTube, live on the day or the replay (VOD).',
   showIf: WATCHED_STREAM,
   questions: [
-    { key: 'stream_when', kind: 'single', label: 'Did you watch live or the replay?', options: ['Live', 'Replay later', 'Both'] },
+    { key: 'stream_when', kind: 'single', label: 'Did you watch live or the replay?', options: ['Live on the day', 'The replay (VOD)', 'Both'] },
     {
       key: 'stream_watch_time', kind: 'single', label: 'About how long did you watch?',
       options: ['Under 15 minutes', '15–60 minutes', '1–3 hours', 'Most of the day'],
@@ -511,23 +534,32 @@ const winnerPrizes: SurveySection = {
     },
     {
       key: 'prizes_received', kind: 'multi', label: 'What did you take home?', hint: 'Tap all that apply', required: true,
-      options: ['Miniso basket', 'Goodles products', 'Trophy / medal', 'Yo-yo / gear', 'Something else'],
+      options: ['Goodles shirt', 'Goodles Mac', 'MINISO basket', 'Yo-yo', 'String', 'Kendama', 'Something else'],
+    },
+    {
+      // Bags were packed on the day from sponsor drops, so this doubles as our record of what went out.
+      key: 'prize_items_detail', kind: 'short', label: 'Which yo-yo, string, or kendama did you get?', hint: 'Brand or model if you know it',
+      maxLength: 300, showIf: { key: 'prizes_received', anyOf: ['Yo-yo', 'String', 'Kendama', 'Something else'] },
+    },
+    {
+      key: 'gear_prize_rating', kind: 'scale5', label: 'Rate the yo-yo / string / kendama you got', scaleLabels: PRIZE_RATING_LABELS,
+      showIf: { key: 'prizes_received', anyOf: ['Yo-yo', 'String', 'Kendama'] },
     },
     { key: 'prize_overall_rating', kind: 'scale5', label: 'How was your prize package overall?', scaleLabels: PRIZE_RATING_LABELS },
-    { key: 'miniso_basket_rating', kind: 'scale5', label: 'Rate the Miniso basket', scaleLabels: PRIZE_RATING_LABELS, showIf: { key: 'prizes_received', anyOf: ['Miniso basket'] } },
+    { key: 'miniso_basket_rating', kind: 'scale5', label: 'Rate the MINISO basket', scaleLabels: PRIZE_RATING_LABELS, showIf: { key: 'prizes_received', anyOf: ['MINISO basket'] } },
     {
-      key: 'miniso_brand_view', kind: 'single', label: 'Would you shop at Miniso after this?',
-      options: ['Already a fan', 'Yes, more likely now', 'Maybe', 'No'], showIf: { key: 'prizes_received', anyOf: ['Miniso basket'] },
+      key: 'miniso_brand_view', kind: 'single', label: 'Would you shop at MINISO after this?',
+      options: ['Already a fan', 'Yes, more likely now', 'Maybe', 'No'], showIf: { key: 'prizes_received', anyOf: ['MINISO basket'] },
     },
-    { key: 'goodles_prize_rating', kind: 'scale5', label: 'Rate the Goodles additions', scaleLabels: PRIZE_RATING_LABELS, showIf: { key: 'prizes_received', anyOf: ['Goodles products'] } },
+    { key: 'goodles_prize_rating', kind: 'scale5', label: 'Rate the Goodles shirt and Mac', scaleLabels: PRIZE_RATING_LABELS, showIf: { key: 'prizes_received', anyOf: ['Goodles shirt', 'Goodles Mac'] } },
     {
       key: 'goodles_prize_tried', kind: 'single', label: 'Have you tried the Goodles from your prize yet?',
-      options: ['Yes, loved it', 'Yes, it was OK', 'Not yet', 'Gave it away / shared it'], showIf: { key: 'prizes_received', anyOf: ['Goodles products'] },
+      options: ['Yes, loved it', 'Yes, it was OK', 'Not yet', 'Gave it away / shared it'], showIf: { key: 'prizes_received', anyOf: ['Goodles Mac'] },
     },
     { key: 'prize_posted', kind: 'single', label: 'Did you post your prizes?', hint: 'Tagging the sponsors helps us keep them for next year', options: ['Yes, tagged the sponsors', 'Yes, no tags', 'Planning to', 'No'] },
     {
       key: 'prize_wishlist', kind: 'multi', label: 'What prizes would you most want next year?', hint: 'Tap all that apply',
-      options: ['Yo-yos / gear', 'Cash', 'Trophy / medal', 'Sponsor product baskets', 'Gift cards', 'Free entry next year'],
+      options: ['Yo-yos / gear', 'Cash', 'Trophy / medal', 'Sponsor product baskets', 'Apparel', 'Gift cards', 'Free entry next year'],
     },
     { key: 'prize_feedback', kind: 'text', label: 'Favorite thing you took home, or anything else about the prizes?', maxLength: 1000 },
   ],
