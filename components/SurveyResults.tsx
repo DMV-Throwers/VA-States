@@ -40,7 +40,7 @@ const TYPE_LABELS: Record<SurveyType, string> = {
   sponsor: 'Sponsors',
 };
 
-const PLACE_LABELS = ['VA State Champion', '1st', '2nd', '3rd'];
+const PLACE_LABELS = ['', '1st', '2nd', '3rd'];
 
 const HOTEL_NIGHTS: Record<string, number> = { '0 · Day trip': 0, '1 night': 1, '2 nights': 2, '3+ nights': 3 };
 

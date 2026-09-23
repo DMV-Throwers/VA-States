@@ -331,6 +331,10 @@ function duelSection(): SurveySection {
         options: ['Keep it exactly', 'Keep it, with tweaks', 'Change it up'], showIf: DUEL_COMPETED,
       },
       { key: 'duel_vote_fair', kind: 'scale5', label: 'Did the YouTube chat-poll voting feel fair?', scaleLabels: ['1 · Not at all', '5 · Totally fair'], showIf: DUEL_COMPETED },
+      {
+        key: 'duel_signup_when', kind: 'single', label: 'When did you sign up?',
+        options: ['Ahead of time on Challonge', 'On the day'], showIf: DUEL_COMPETED,
+      },
       { key: 'duel_signup', kind: 'scale5', label: 'How easy was signing up and knowing when you were up?', scaleLabels: RATING_LABELS, showIf: DUEL_COMPETED },
       { key: 'duel_play_again', kind: 'single', label: 'Would you play Stella Duellum again?', options: ['Yes', 'Maybe', 'No'], showIf: DUEL_COMPETED },
 
@@ -516,14 +520,14 @@ const sponsorDay: SurveySection = {
 
 const PRIZE_RATING_LABELS: [string, string] = ['1 · Meh', '5 · Loved it'];
 
-/** Only sent to the top 3 and the VA State Champion in each division (see lib/standings.ts). */
+/** Only sent to the top 3 in each division, who got prizes (see lib/standings.ts). */
 const winnerPrizes: SurveySection = {
   id: 'prizes',
   title: 'Your Prizes',
   blurb: 'Congrats. Tell us what you thought of what you took home.',
   questions: [
     { key: 'placement', kind: 'single', label: 'Where did you place?', hint: 'If you placed in two divisions, pick your best',
-      options: ['1st', '2nd', '3rd', 'VA State Champion (top Virginia finisher)'], required: true },
+      options: ['1st', '2nd', '3rd'], required: true },
     {
       key: 'prizes_known_before', kind: 'single', label: 'Did you know about the prizes before you competed?',
       options: ['Yes, and it made me more excited to compete', 'Yes, but it didn\u2019t change anything', 'No'],
@@ -604,7 +608,7 @@ export const SURVEYS: Record<SurveyType, SurveyDef> = {
   winner: {
     type: 'winner',
     eyebrow: 'Winner Feedback',
-    title: 'You placed. Tell us how it went.',
+    title: 'You made the podium. Tell us how it went.',
     intro: 'Same survey as every competitor, plus a few questions about your prizes. About 6 minutes. Your answers shape VSYC-27 and help us keep great prize sponsors.',
     sections: [competitorDay, winnerPrizes, contestSection(), duelSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
   },
