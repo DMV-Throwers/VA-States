@@ -445,7 +445,7 @@ export default function SurveyResults({ token }: { token: string }) {
                 {quotes.map((r) => (
                   <li key={r.id} className="border-l-2 border-gold bg-navy-deep p-3 text-sm text-text-body">
                     <p className="text-white">
-                      “{r.quote_text || (r.answers.did_well as string) || (r.answers.do_better as string) || '(no text, pull from answers)'}”
+                      “{r.quote_text || (r.answers.did_well as string) || '(no quote text; check their answers)'}”
                     </p>
                     <p className="text-xs text-text-muted mt-1">
                       {r.contact_name || 'Anonymous'} · {TYPE_LABELS[r.survey_type]}

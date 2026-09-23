@@ -54,6 +54,13 @@ export default function SurveyForm({ type, source }: { type: SurveyType; source:
       return;
     }
 
+    const optIns = answers.keep_me_posted;
+    if (Array.isArray(optIns) && optIns.length > 0 && !contactEmail.trim()) {
+      setError('You asked for updates. Add your email in Follow-Up so we can send them.');
+      document.getElementById('contact_email')?.focus();
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch('/api/survey', {

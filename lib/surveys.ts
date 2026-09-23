@@ -37,7 +37,7 @@ export interface SurveyQuestion {
   options?: readonly string[];
   required?: boolean;
   placeholder?: string;
-  /** Only shown (and only accepted) when another answer matches one of these values. */
+  /** Only shown (and only accepted) when another answer matches (or, for a multi, includes) one of these values. */
   showIf?: { key: string; anyOf: readonly string[] };
   /** Ends of a scale, shown under the buttons. */
   scaleLabels?: [string, string];
@@ -84,9 +84,9 @@ const VENDOR_SPEND = ['$1–25', '$25–75', '$75–150', '$150+'] as const;
 const VENDOR_VISIT = ['Stopped and bought something', "Stopped but didn't buy", "Didn't stop at a vendor"] as const;
 const VENDORS = ['Freshly Dirty', 'Jake Bullock', 'Slow n Steady'] as const;
 
-const AFTER_PARTY = ["Didn't go", 'Went · spent $0', 'Went · $1–20', 'Went · $20–50', 'Went · $50+'] as const;
+const AFTER_PARTY = ["Didn't know about it", "Didn't go", 'Went · spent $0', 'Went · $1–20', 'Went · $20–50', 'Went · $50+'] as const;
 const AFTER_PARTY_MID: Record<string, number> = {
-  "Didn't go": 0, 'Went · spent $0': 0, 'Went · $1–20': 10, 'Went · $20–50': 35, 'Went · $50+': 60,
+  "Didn't know about it": 0, "Didn't go": 0, 'Went · spent $0': 0, 'Went · $1–20': 10, 'Went · $20–50': 35, 'Went · $50+': 60,
 };
 
 const AMENITIES = [
@@ -136,7 +136,11 @@ function contestSection(): SurveySection {
       { key: 'overall_rating', kind: 'scale5', label: 'Overall, how was VSYC-26?', required: true, scaleLabels: RATING_LABELS },
       { key: 'venue_rating', kind: 'scale5', label: 'How was Dulles Town Center as the venue?', hint: 'Space, sound, sightlines, getting around', scaleLabels: RATING_LABELS },
       { key: 'did_well', kind: 'text', label: 'What\u2019s the one thing we should keep for VSYC-27, no matter what?', maxLength: 1500 },
-      { key: 'do_better', kind: 'text', label: 'If you could change one thing for VSYC-27, what would it be?', maxLength: 1500 },
+      { key: 'do_better', kind: 'text', label: 'What\u2019s one thing that didn\u2019t work or frustrated you?', maxLength: 1500 },
+      {
+        key: 'next_year_suggestions', kind: 'text', label: 'Any suggestions or ideas for VSYC-27?',
+        hint: 'New divisions, activities, prizes, timing, food, anything', maxLength: 2000,
+      },
       {
         key: 'recommend_nps', kind: 'nps', required: true,
         label: 'How likely are you to recommend VSYC to a friend or family member?',
@@ -148,14 +152,14 @@ function contestSection(): SurveySection {
 
 function weekendSection({ includeVendorSpend = true } = {}): SurveySection {
   const questions: SurveyQuestion[] = [
-    { key: 'travel_time', kind: 'single', label: 'How far did you travel to get here?', options: TRAVEL },
+    { key: 'travel_time', kind: 'single', label: 'How long was your trip to the contest (one way)?', options: TRAVEL },
     { key: 'group_size', kind: 'single', label: 'Including you, how many people were in your group?', options: GROUP_SIZE },
     { key: 'group_ages', kind: 'multi', label: 'Who was in your group?', hint: 'Tap all that apply', options: GROUP_AGES },
     { key: 'hotel_nights', kind: 'single', label: 'How many nights did you stay at a local hotel?', options: HOTEL_NIGHTS },
-    { key: 'hotel_group_rate', kind: 'single', label: 'VA States had a hotel group rate. Did you know?', options: GROUP_RATE },
+    { key: 'hotel_group_rate', kind: 'single', label: 'VA States had a hotel group rate. Did you know about it?', options: GROUP_RATE },
     {
       key: 'weekend_spend', kind: 'single',
-      label: 'About how much did your group spend this weekend?',
+      label: 'About how much did your group spend on the trip?',
       hint: 'Gas, hotel, food, shopping. Leave out entry fees.',
       options: WEEKEND_SPEND, midpoints: WEEKEND_SPEND_MID,
     },
@@ -180,7 +184,7 @@ function weekendSection({ includeVendorSpend = true } = {}): SurveySection {
       options: VENDOR_SPEND, midpoints: DULLES_SPEND_MID,
       showIf: { key: 'vendor_visit', anyOf: ['Stopped and bought something'] },
     },
-    { key: 'amenities_used', kind: 'multi', label: 'Which amenities did you use?', hint: 'Tap all that apply', options: AMENITIES },
+    { key: 'amenities_used', kind: 'multi', label: 'Which amenities did you use that day?', hint: 'Tap all that apply', options: AMENITIES },
     {
       key: 'after_party', kind: 'single',
       label: 'Did you go to the after-party? About how much did you spend?',
@@ -189,7 +193,7 @@ function weekendSection({ includeVendorSpend = true } = {}): SurveySection {
   ];
   return {
     id: 'weekend',
-    title: 'Your Weekend',
+    title: 'Your Trip',
     blurb: 'Rough guesses are fine. This shows venues and partners the real impact of the contest.',
     // Vendors don't get asked about shopping at their own tables.
     questions: includeVendorSpend
@@ -202,10 +206,12 @@ function goodlesSection(sponsorView = false): SurveySection {
   return {
     id: 'goodles',
     title: 'Goodles',
-    blurb: 'Goodles brought VSYC-26 to you. Tell us what you thought.',
+    blurb: sponsorView
+      ? 'Goodles brought VSYC-26 to you. Goodles team: skip ahead to Stay in Touch.'
+      : 'Goodles brought VSYC-26 to you. Tell us what you thought.',
     questions: [
-      { key: 'goodles_familiarity', kind: 'single', label: 'Before VSYC-26, how well did you know Goodles?', options: GOODLES_FAMILIARITY, required: true },
-      { key: 'goodles_booth', kind: 'single', label: 'Did you stop by the Goodles booth?', options: GOODLES_BOOTH, required: true },
+      { key: 'goodles_familiarity', kind: 'single', label: 'Before VSYC-26, how well did you know Goodles?', options: GOODLES_FAMILIARITY, required: !sponsorView },
+      { key: 'goodles_booth', kind: 'single', label: 'Did you stop by the Goodles booth?', options: GOODLES_BOOTH, required: !sponsorView },
       {
         key: 'goodles_activities', kind: 'multi', label: 'What did you do there?', hint: 'Tap all that apply',
         options: GOODLES_ACTIVITIES, showIf: { key: 'goodles_booth', anyOf: ['Stopped by'] },
@@ -258,10 +264,10 @@ const competitorDay: SurveySection = {
   title: 'Your Day',
   questions: [
     { key: 'divisions', kind: 'multi', label: 'Which division(s) did you compete in?', options: ['1A', 'X Division', 'Sport / Beginner / Junior'], required: true },
-    { key: 'registration_rating', kind: 'scale5', label: 'Registration, music upload, and emails before the day', scaleLabels: RATING_LABELS },
-    { key: 'judging_rating', kind: 'scale5', label: 'Judging: fair and well explained?', scaleLabels: RATING_LABELS },
-    { key: 'schedule_rating', kind: 'scale5', label: 'Schedule and flow on the day', hint: 'Check-in, run order, downtime', scaleLabels: RATING_LABELS },
-    { key: 'stage_rating', kind: 'scale5', label: 'Stage, sound, and practice space for your freestyle', scaleLabels: RATING_LABELS },
+    { key: 'registration_rating', kind: 'scale5', label: 'How was registration, music upload, and email before the day?', scaleLabels: RATING_LABELS },
+    { key: 'judging_rating', kind: 'scale5', label: 'Did the judging feel fair and well explained?', scaleLabels: RATING_LABELS },
+    { key: 'schedule_rating', kind: 'scale5', label: 'How did the schedule and flow feel on the day?', hint: 'Check-in, run order, downtime', scaleLabels: RATING_LABELS },
+    { key: 'stage_rating', kind: 'scale5', label: 'How were the stage, sound, and practice space for your freestyle?', scaleLabels: RATING_LABELS },
     {
       key: 'format_preference', kind: 'single', label: 'VSYC-26 had no prelims. For VSYC-27, would you rather:',
       options: ['Keep it: everyone gets one full freestyle', 'Add prelims and finals', 'No preference'],
@@ -280,7 +286,7 @@ const spectatorDay: SurveySection = {
       required: true,
     },
     { key: 'first_contest', kind: 'single', label: 'Was this your first yo-yo contest?', options: ['Yes, first one', 'No, been before'] },
-    { key: 'rsvped', kind: 'single', label: 'Did you RSVP before the day?', options: ['Yes', 'No, just showed up', 'Not sure'] },
+    { key: 'rsvped', kind: 'single', label: 'Did you RSVP online before the contest?', options: ['Yes', 'No, just showed up', 'Not sure'] },
     {
       key: 'time_on_site', kind: 'single', label: 'How long did you stay?',
       options: ['Under 30 minutes', '30 min – 1 hour', '1–3 hours', '3+ hours'],
@@ -306,7 +312,7 @@ const volunteerDay: SurveySection = {
       midpoints: { 'Under 2': 1.5, '2–4': 3, '4–6': 5, '6–8': 7, '8+': 9 },
     },
     { key: 'role_matched', kind: 'single', label: 'Did it match what you signed up for?', options: ['Yes', 'Mostly', 'No'] },
-    { key: 'comms_rating', kind: 'scale5', label: 'Communication before the event', scaleLabels: RATING_LABELS },
+    { key: 'comms_rating', kind: 'scale5', label: 'How clear was communication before the event?', scaleLabels: RATING_LABELS },
     { key: 'support_rating', kind: 'scale5', label: 'Did you feel prepared and supported on the day?', hint: 'Training, tools, laptops, breaks', scaleLabels: RATING_LABELS },
     { key: 'volunteer_again', kind: 'single', label: 'Would you volunteer at VSYC-27?', options: ['Yes, same role', 'Yes, different role', 'Maybe', 'No'] },
     { key: 'volunteer_advice', kind: 'text', label: 'Advice for next year’s volunteers?', hint: 'We may share this in onboarding', maxLength: 1000 },
@@ -344,12 +350,22 @@ const winnerPrizes: SurveySection = {
       key: 'prizes_known_before', kind: 'single', label: 'Did you know about the prizes before you competed?',
       options: ['Yes, and it made me more excited to compete', 'Yes, but it didn\u2019t change anything', 'No'],
     },
+    {
+      key: 'prizes_received', kind: 'multi', label: 'What did you take home?', hint: 'Tap all that apply', required: true,
+      options: ['Miniso basket', 'Goodles products', 'Trophy / medal', 'Yo-yo / gear', 'Something else'],
+    },
     { key: 'prize_overall_rating', kind: 'scale5', label: 'How was your prize package overall?', scaleLabels: PRIZE_RATING_LABELS },
-    { key: 'miniso_basket_rating', kind: 'scale5', label: 'Rate the Miniso basket', scaleLabels: PRIZE_RATING_LABELS },
-    { key: 'miniso_brand_view', kind: 'single', label: 'Would you shop at Miniso after this?', options: ['Already a fan', 'Yes, more likely now', 'Maybe', 'No'] },
-    { key: 'goodles_prize_rating', kind: 'scale5', label: 'Rate the Goodles additions', scaleLabels: PRIZE_RATING_LABELS },
-    { key: 'goodles_prize_tried', kind: 'single', label: 'Have you tried the Goodles from your prize yet?', options: ['Yes, loved it', 'Yes, it was OK', 'Not yet', 'Gave it away / shared it'] },
-    { key: 'prize_posted', kind: 'single', label: 'Did you post your prizes?', hint: 'Tagging Miniso and Goodles helps us keep them as sponsors', options: ['Yes, tagged the sponsors', 'Yes, no tags', 'Planning to', 'No'] },
+    { key: 'miniso_basket_rating', kind: 'scale5', label: 'Rate the Miniso basket', scaleLabels: PRIZE_RATING_LABELS, showIf: { key: 'prizes_received', anyOf: ['Miniso basket'] } },
+    {
+      key: 'miniso_brand_view', kind: 'single', label: 'Would you shop at Miniso after this?',
+      options: ['Already a fan', 'Yes, more likely now', 'Maybe', 'No'], showIf: { key: 'prizes_received', anyOf: ['Miniso basket'] },
+    },
+    { key: 'goodles_prize_rating', kind: 'scale5', label: 'Rate the Goodles additions', scaleLabels: PRIZE_RATING_LABELS, showIf: { key: 'prizes_received', anyOf: ['Goodles products'] } },
+    {
+      key: 'goodles_prize_tried', kind: 'single', label: 'Have you tried the Goodles from your prize yet?',
+      options: ['Yes, loved it', 'Yes, it was OK', 'Not yet', 'Gave it away / shared it'], showIf: { key: 'prizes_received', anyOf: ['Goodles products'] },
+    },
+    { key: 'prize_posted', kind: 'single', label: 'Did you post your prizes?', hint: 'Tagging the sponsors helps us keep them for next year', options: ['Yes, tagged the sponsors', 'Yes, no tags', 'Planning to', 'No'] },
     {
       key: 'prize_wishlist', kind: 'multi', label: 'What prizes would you most want next year?', hint: 'Tap all that apply',
       options: ['Yo-yos / gear', 'Cash', 'Trophy / medal', 'Sponsor product baskets', 'Gift cards', 'Free entry next year'],
@@ -358,7 +374,7 @@ const winnerPrizes: SurveySection = {
   ],
 };
 
-const SALES = ['Under $100', '$100–250', '$250–500', '$500–1,000', '$1,000–2,500', '$2,500+'] as const;
+const SALES = ['Under $100', '$100–250', '$250–500', '$500–1,000', '$1,000–2,500', '$2,500+', 'Prefer not to say'] as const;
 const SALES_MID: Record<string, number> = {
   'Under $100': 50, '$100–250': 175, '$250–500': 375, '$500–1,000': 750, '$1,000–2,500': 1750, '$2,500+': 3000,
 };
@@ -394,7 +410,7 @@ export const SURVEYS: Record<SurveyType, SurveyDef> = {
     type: 'competitor',
     eyebrow: 'Competitor Feedback',
     title: 'You’re the reason this contest exists.',
-    intro: 'Win, lose, or somewhere in between, tell us how it felt to compete. About 4 minutes. Your answers shape VSYC-27.',
+    intro: 'Win, lose, or somewhere in between, tell us how it felt to compete. About 5 minutes. Your answers shape VSYC-27.',
     sections: [competitorDay, contestSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
   },
   winner: {
@@ -408,14 +424,14 @@ export const SURVEYS: Record<SurveyType, SurveyDef> = {
     type: 'spectator',
     eyebrow: 'Spectator Feedback',
     title: 'You came to watch. Tell us how it went.',
-    intro: 'Whether you RSVP’d or just walked by, your answers help make next year bigger and better. About 4 minutes.',
+    intro: 'Whether you RSVP’d or just walked by, your answers help make next year bigger and better. About 5 minutes.',
     sections: [spectatorDay, contestSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
   },
   volunteer: {
     type: 'volunteer',
     eyebrow: 'Volunteer Feedback',
     title: 'You made September 19th work.',
-    intro: 'Tell us what it was really like behind the scenes. About 4 minutes.',
+    intro: 'Tell us what it was really like behind the scenes. About 5 minutes.',
     sections: [volunteerDay, contestSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
   },
   vendor: {
@@ -441,6 +457,7 @@ export function allQuestions(type: SurveyType): SurveyQuestion[] {
 export function isQuestionVisible(q: SurveyQuestion, answers: Record<string, unknown>): boolean {
   if (!q.showIf) return true;
   const v = answers[q.showIf.key];
+  if (Array.isArray(v)) return v.some((x) => typeof x === 'string' && q.showIf!.anyOf.includes(x));
   return typeof v === 'string' && q.showIf.anyOf.includes(v);
 }
 

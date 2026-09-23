@@ -57,6 +57,12 @@ export const POST = withErrorHandling(async (requestId, req: NextRequest) => {
     return apiError('bad_request', result.error, requestId);
   }
 
+  // Opting into updates is useless without somewhere to send them.
+  const optIns = result.answers.keep_me_posted;
+  if (Array.isArray(optIns) && optIns.length > 0 && !data.contact_email) {
+    return apiError('bad_request', 'Add your email in Follow-Up so we can send you those updates.', requestId);
+  }
+
   const allowQuote = data.allow_quote === true;
 
   const supabase = createAdminClient();
