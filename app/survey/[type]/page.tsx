@@ -18,12 +18,12 @@ export default async function SurveyPage({
   searchParams,
 }: {
   params: Promise<{ type: string }>;
-  searchParams: Promise<{ src?: string }>;
+  searchParams: Promise<{ src?: string; watch?: string }>;
 }) {
   const { type } = await params;
   if (!isSurveyType(type)) notFound();
 
-  const { src } = await searchParams;
+  const { src, watch } = await searchParams;
   const source: SurveySource = (SURVEY_SOURCES as readonly string[]).includes(src ?? '')
     ? (src as SurveySource)
     : 'direct';
@@ -48,7 +48,12 @@ export default async function SurveyPage({
       </div>
 
       <main id="main-content" className="max-w-2xl mx-auto px-4 py-10">
-        <SurveyForm type={type} source={source} />
+        <SurveyForm
+          type={type}
+          source={source}
+          // ?watch=stream (e.g. from the YouTube description) opens the livestream path.
+          initialAnswers={type === 'spectator' && watch === 'stream' ? { watch_mode: 'On the livestream only' } : {}}
+        />
       </main>
 
       <Footer />

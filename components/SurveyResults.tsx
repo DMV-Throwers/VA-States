@@ -173,6 +173,11 @@ export default function SurveyResults({ token }: { token: string }) {
     };
     const vendorNext = str('vendor_next_year');
     const vendorVisit = str('vendor_visit');
+    const watch = str('watch_mode');
+    const reliability = str('stream_reliability');
+    const duel = filtered.map((r) => r.answers.duel_involvement).filter((v): v is string[] => Array.isArray(v));
+    const duelEngaged = duel.filter((a) => a.some((x) => x === 'Played in the bracket' || x.startsWith('Watched'))).length;
+    const duelBack = str('duel_next_year');
 
     return {
       overall: avg(num('overall_rating')),
@@ -205,6 +210,23 @@ export default function SurveyResults({ token }: { token: string }) {
       vendorStopped: vendorVisit.filter((v) => v !== "Didn't stop at a vendor").length,
       vendorBought: vendorVisit.filter((v) => v === 'Stopped and bought something').length,
       vendorVisitN: vendorVisit.length,
+      streamOnly: watch.filter((v) => v === 'On the livestream only').length,
+      streamBoth: watch.filter((v) => v === 'Both').length,
+      watchN: watch.length,
+      streamOverall: avg(num('stream_overall')),
+      streamVideo: avg(num('stream_video')),
+      streamAudio: avg(num('stream_audio')),
+      streamSeeTricks: avg(num('stream_see_tricks')),
+      streamSmooth: reliability.filter((v) => v === 'Smooth the whole time').length,
+      reliabilityN: reliability.length,
+      streamComeInPerson: str('stream_attend_next').filter((v) => v === 'Yes, planning on it').length,
+      streamAttendN: str('stream_attend_next').length,
+      duelN: duel.length,
+      duelEngaged,
+      duelDidntKnow: duel.filter((a) => a.includes("Didn't know it was happening")).length,
+      duelRating: avg(num('duel_rating')),
+      duelBackYes: duelBack.filter((v) => v.startsWith('Yes')).length,
+      duelBackN: duelBack.length,
       vendorN: str('vendor_sales').length,
       vendorSales: midSum('vendor_sales'),
       vendorLocation: avg(num('vendor_location_rating')),
@@ -285,7 +307,8 @@ export default function SurveyResults({ token }: { token: string }) {
           </ul>
           <p className="text-xs text-text-muted mt-3">
             The spectator link is fully open: anyone can fill it in, registered or not. Post it or put it on a QR code
-            (use <code>/feedback?src=qr</code> on printed QR codes to count scans separately). Send vendors and sponsors
+            (use <code>/feedback?src=qr</code> on printed QR codes to count scans separately). For the YouTube description
+            or stream chat, use <code>/feedback?watch=stream&amp;src=social</code>: it opens the livestream path directly. Send vendors and sponsors
             their links directly. Vendors who also sponsored (Freshly Dirty) take the vendor survey. The winner link is only for podium finishers.
           </p>
         </div>
@@ -399,6 +422,32 @@ export default function SurveyResults({ token }: { token: string }) {
               <Stat label="More likely to buy" value={pct(kpis.moreLikely, kpis.intentN)} note={`${kpis.moreLikely} of ${kpis.intentN} not already regular buyers`} />
             </div>
           </section>
+
+          {kpis.watchN > 0 && (kpis.streamOnly + kpis.streamBoth) > 0 && (
+            <section>
+              <h3 className="text-xs font-black tracking-caps text-gold mb-3">LIVESTREAM</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Stat label="Watched the stream" value={String(kpis.streamOnly + kpis.streamBoth)} note={`${kpis.streamOnly} stream only · ${kpis.streamBoth} also in person`} />
+                <Stat label="Stream overall" value={kpis.streamOverall ? `${kpis.streamOverall.toFixed(1)} / 5` : '—'} />
+                <Stat label="Video · audio" value={`${kpis.streamVideo ? kpis.streamVideo.toFixed(1) : '—'} · ${kpis.streamAudio ? kpis.streamAudio.toFixed(1) : '—'}`} note="Out of 5" />
+                <Stat label="Could see the tricks" value={kpis.streamSeeTricks ? `${kpis.streamSeeTricks.toFixed(1)} / 5` : '—'} />
+                <Stat label="Smooth the whole time" value={pct(kpis.streamSmooth, kpis.reliabilityN)} note={`${kpis.streamSmooth} of ${kpis.reliabilityN}`} />
+                <Stat label="Stream-only who'll come in person" value={pct(kpis.streamComeInPerson, kpis.streamAttendN)} note={`${kpis.streamComeInPerson} of ${kpis.streamAttendN}`} />
+              </div>
+            </section>
+          )}
+
+          {kpis.duelN > 0 && (
+            <section>
+              <h3 className="text-xs font-black tracking-caps text-gold mb-3">STELLA DUELLUM</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Stat label="Played or watched" value={pct(kpis.duelEngaged, kpis.duelN)} note={`${kpis.duelEngaged} of ${kpis.duelN}`} />
+                <Stat label="Fun rating" value={kpis.duelRating ? `${kpis.duelRating.toFixed(1)} / 5` : '—'} />
+                <Stat label="Want it back" value={pct(kpis.duelBackYes, kpis.duelBackN)} note={`${kpis.duelBackYes} of ${kpis.duelBackN}`} />
+                <Stat label="Didn't know it was on" value={pct(kpis.duelDidntKnow, kpis.duelN)} note={`${kpis.duelDidntKnow} of ${kpis.duelN}`} />
+              </div>
+            </section>
+          )}
 
           {kpis.hasPrizes && (
             <section>

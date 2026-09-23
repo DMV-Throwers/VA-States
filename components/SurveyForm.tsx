@@ -4,6 +4,8 @@ import { FormEvent, useState } from 'react';
 import {
   SURVEYS,
   isQuestionVisible,
+  isSectionVisible,
+  visibleQuestions,
   type SurveyAnswerValue,
   type SurveyQuestion,
   type SurveySource,
@@ -12,9 +14,20 @@ import {
 
 type Answers = Record<string, SurveyAnswerValue>;
 
-export default function SurveyForm({ type, source }: { type: SurveyType; source: SurveySource }) {
+export default function SurveyForm({
+  type,
+  source,
+  initialAnswers = {},
+}: {
+  type: SurveyType;
+  source: SurveySource;
+  /** Pre-filled answers from the link, e.g. /feedback?watch=stream picks the livestream path. */
+  initialAnswers?: Answers;
+}) {
   const def = SURVEYS[type];
-  const [answers, setAnswers] = useState<Answers>({});
+  const [answers, setAnswers] = useState<Answers>(initialAnswers);
+  const sections = def.sections.filter((s) => isSectionVisible(s, answers));
+  const totalSteps = sections.length + 1;
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [allowQuote, setAllowQuote] = useState(false);
@@ -44,9 +57,7 @@ export default function SurveyForm({ type, source }: { type: SurveyType; source:
     e.preventDefault();
     setError('');
 
-    const required = def.sections
-      .flatMap((s) => s.questions)
-      .filter((q) => q.required && isQuestionVisible(q, answers) && answers[q.key] === undefined);
+    const required = visibleQuestions(type, answers).filter((q) => q.required && answers[q.key] === undefined);
     if (required.length > 0) {
       setMissing(new Set(required.map((q) => q.key)));
       setError('A few required questions still need an answer. Look for the red bar.');
@@ -122,11 +133,11 @@ export default function SurveyForm({ type, source }: { type: SurveyType; source:
         aria-hidden="true"
       />
 
-      {def.sections.map((section, i) => (
+      {sections.map((section, i) => (
         <section key={section.id}>
           <div className="mb-6">
             <span className="inline-block bg-gold text-navy-deep text-xs font-black tracking-widest px-2 py-0.5 mb-2">
-              {i + 1} OF {def.sections.length + 1}
+              {i + 1} OF {totalSteps}
             </span>
             <h2 className="font-display font-black text-2xl text-white">{section.title}</h2>
             <div className="w-12 h-0.5 bg-gold mt-2" />
@@ -151,7 +162,7 @@ export default function SurveyForm({ type, source }: { type: SurveyType; source:
       <section>
         <div className="mb-6">
           <span className="inline-block bg-gold text-navy-deep text-xs font-black tracking-widest px-2 py-0.5 mb-2">
-            {def.sections.length + 1} OF {def.sections.length + 1}
+            {totalSteps} OF {totalSteps}
           </span>
           <h2 className="font-display font-black text-2xl text-white">Follow-Up</h2>
           <div className="w-12 h-0.5 bg-gold mt-2" />

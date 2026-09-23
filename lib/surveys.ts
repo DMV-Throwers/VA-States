@@ -8,7 +8,8 @@
  * Goodles, stay in touch) so results can be compared across groups and the
  * economic-impact numbers cover everyone who was there. Only the opening
  * "Your day" block changes per role — plus a Prizes block for winners
- * (top 3 per division) and sales questions for vendors.
+ * (top 3 per division), sales questions for vendors, and a livestream path
+ * for spectators who watched online (they skip the in-person questions).
  *
  * Question `key`s are stored as JSON keys in vsyc26_survey_responses.answers.
  * Never rename a key once responses exist — add a new one instead.
@@ -38,7 +39,10 @@ export interface SurveyQuestion {
   required?: boolean;
   placeholder?: string;
   /** Only shown (and only accepted) when another answer matches (or, for a multi, includes) one of these values. */
-  showIf?: { key: string; anyOf: readonly string[] };
+  showIf?: Condition;
+  /** Hidden when another answer matches. Unlike showIf, a missing answer keeps it visible —
+   *  so shared questions can hide for one survey's path without disappearing from the others. */
+  hideIf?: Condition;
   /** Ends of a scale, shown under the buttons. */
   scaleLabels?: [string, string];
   /** Numeric midpoint per option (dollars or hours), used by the dashboard to estimate totals. */
@@ -46,11 +50,18 @@ export interface SurveyQuestion {
   maxLength?: number;
 }
 
+export interface Condition {
+  key: string;
+  anyOf: readonly string[];
+}
+
 export interface SurveySection {
   id: string;
   title: string;
   blurb?: string;
   questions: SurveyQuestion[];
+  showIf?: Condition;
+  hideIf?: Condition;
 }
 
 export interface SurveyDef {
@@ -109,11 +120,13 @@ const GOODLES_FAMILIARITY = [
   'Buy it regularly',
 ] as const;
 const GOODLES_BOOTH = ['Stopped by', "Saw it, didn't stop", "Didn't notice it"] as const;
+// Matches the Twirly Tour stop: sampling cart, stickers + temporary tattoos, Twirl for a Prize.
 const GOODLES_ACTIVITIES = [
-  'Tried a sample',
+  'Tried a Twirly Mac sample',
+  'Played Twirl for a Prize',
+  'Got stickers or temporary tattoos',
   'Took product home',
   'Took a photo',
-  'Played a game / challenge',
   'Talked with the Goodles team',
   'Followed Goodles on social',
 ] as const;
@@ -125,6 +138,12 @@ const GOODLES_AFFINITY = [
   'Less',
 ] as const;
 
+// Spectator path: people who only watched the YoYo Contest Central livestream
+// skip everything that assumes they were at the mall.
+const WATCH_MODES = ['In person at Dulles Town Center', 'On the livestream only', 'Both'] as const;
+const STREAM_ONLY: Condition = { key: 'watch_mode', anyOf: ['On the livestream only'] };
+const WATCHED_STREAM: Condition = { key: 'watch_mode', anyOf: ['On the livestream only', 'Both'] };
+
 // ─── Shared sections ────────────────────────────────────────────────────────
 
 function contestSection(): SurveySection {
@@ -134,7 +153,7 @@ function contestSection(): SurveySection {
     blurb: 'Big picture. Be honest. It only helps.',
     questions: [
       { key: 'overall_rating', kind: 'scale5', label: 'Overall, how was VSYC-26?', required: true, scaleLabels: RATING_LABELS },
-      { key: 'venue_rating', kind: 'scale5', label: 'How was Dulles Town Center as the venue?', hint: 'Space, sound, sightlines, getting around', scaleLabels: RATING_LABELS },
+      { key: 'venue_rating', kind: 'scale5', label: 'How was Dulles Town Center as the venue?', hint: 'Space, sound, sightlines, getting around', scaleLabels: RATING_LABELS, hideIf: STREAM_ONLY },
       { key: 'did_well', kind: 'text', label: 'What\u2019s the one thing we should keep for VSYC-27, no matter what?', maxLength: 1500 },
       { key: 'do_better', kind: 'text', label: 'What\u2019s one thing that didn\u2019t work or frustrated you?', maxLength: 1500 },
       {
@@ -194,6 +213,7 @@ function weekendSection({ includeVendorSpend = true } = {}): SurveySection {
   return {
     id: 'weekend',
     title: 'Your Trip',
+    hideIf: STREAM_ONLY,
     blurb: 'Rough guesses are fine. This shows venues and partners the real impact of the contest.',
     // Vendors don't get asked about shopping at their own tables.
     questions: includeVendorSpend
@@ -211,7 +231,14 @@ function goodlesSection(sponsorView = false): SurveySection {
       : 'Goodles brought VSYC-26 to you. Tell us what you thought.',
     questions: [
       { key: 'goodles_familiarity', kind: 'single', label: 'Before VSYC-26, how well did you know Goodles?', options: GOODLES_FAMILIARITY, required: !sponsorView },
-      { key: 'goodles_booth', kind: 'single', label: 'Did you stop by the Goodles booth?', options: GOODLES_BOOTH, required: !sponsorView },
+      {
+        key: 'goodles_booth', kind: 'single', label: 'Did you stop by the Goodles Twirly Tour booth?', hint: 'The Twirly Mac sampling cart',
+        options: GOODLES_BOOTH, required: !sponsorView, hideIf: STREAM_ONLY,
+      },
+      {
+        key: 'goodles_stream_noticed', kind: 'single', label: 'Did you notice Goodles on the stream?',
+        options: ['Yes', 'No', 'Not sure'], showIf: WATCHED_STREAM,
+      },
       {
         key: 'goodles_activities', kind: 'multi', label: 'What did you do there?', hint: 'Tap all that apply',
         options: GOODLES_ACTIVITIES, showIf: { key: 'goodles_booth', anyOf: ['Stopped by'] },
@@ -237,6 +264,45 @@ function goodlesSection(sponsorView = false): SurveySection {
         label: sponsorView ? 'Any notes for Goodles as a fellow sponsor?' : 'Anything you want Goodles to hear?',
         hint: 'Favorite flavor, booth ideas, anything', maxLength: 1000,
       },
+    ],
+  };
+}
+
+const DUEL_INVOLVEMENT = [
+  'Played in the bracket',
+  'Watched it in person',
+  'Watched it on the stream',
+  'Missed it',
+  "Didn't know it was happening",
+] as const;
+const DUEL_ENGAGED: Condition = { key: 'duel_involvement', anyOf: ['Played in the bracket', 'Watched it in person', 'Watched it on the stream'] };
+const DUEL_PLAYED: Condition = { key: 'duel_involvement', anyOf: ['Played in the bracket'] };
+
+/** Stella Duellum: the Dueling Stars guest bracket run by Prismatic Stars. */
+function duelSection(): SurveySection {
+  return {
+    id: 'duel',
+    title: 'Stella Duellum',
+    blurb: 'The Dueling Stars bracket, hosted by Anneurismz for Prismatic Stars: one-minute routines, random music, chat-poll winners.',
+    questions: [
+      { key: 'duel_involvement', kind: 'multi', label: 'Did you catch Stella Duellum?', hint: 'Tap all that apply', options: DUEL_INVOLVEMENT },
+      { key: 'duel_rating', kind: 'scale5', label: 'How fun was it?', scaleLabels: ['1 · Not for me', '5 · Loved it'], showIf: DUEL_ENGAGED },
+      {
+        key: 'duel_format', kind: 'single', label: 'One-minute routines to random music: keep that format?',
+        options: ['Keep it exactly', 'Keep it, with tweaks', 'Change it up'], showIf: DUEL_ENGAGED,
+      },
+      {
+        key: 'duel_voted', kind: 'single', label: 'Did you vote in the YouTube chat poll?',
+        options: ['Yes', "No, didn't know how", "No, wasn't on the stream"], showIf: DUEL_ENGAGED,
+      },
+      { key: 'duel_vote_fair', kind: 'scale5', label: 'Did chat-poll voting feel fair?', scaleLabels: ['1 · Not at all', '5 · Totally fair'], showIf: DUEL_PLAYED },
+      { key: 'duel_play_again', kind: 'single', label: 'Would you play Stella Duellum again?', options: ['Yes', 'Maybe', 'No'], showIf: DUEL_PLAYED },
+      {
+        key: 'duel_next_year', kind: 'single', label: 'Should Stella Duellum come back for VSYC-27?',
+        options: ['Yes, make it bigger', 'Yes, same size', 'Not sure', 'No'], showIf: DUEL_ENGAGED,
+      },
+      { key: 'prismatic_aware', kind: 'single', label: 'Before VSYC-26, had you heard of Prismatic Stars?', options: ['Yes', 'No'], showIf: DUEL_ENGAGED },
+      { key: 'duel_feedback', kind: 'text', label: 'Anything for Prismatic Stars or Anneurismz?', maxLength: 1000, showIf: DUEL_ENGAGED },
     ],
   };
 }
@@ -280,20 +346,57 @@ const spectatorDay: SurveySection = {
   id: 'day',
   title: 'Your Day',
   questions: [
+    { key: 'watch_mode', kind: 'single', label: 'How did you watch VSYC-26?', options: WATCH_MODES, required: true },
     {
       key: 'heard_from', kind: 'single', label: 'How did you hear about VSYC-26?',
-      options: ['Came with a competitor', 'Friend or family', 'Instagram / social', 'DMV Throwers club', 'Walking by at the mall', 'Poster or flyer', 'Goodles', 'Other'],
+      options: ['Came with a competitor', 'Friend or family', 'Instagram / social', 'YouTube / YoYo Contest Central', 'DMV Throwers club', 'Walking by at the mall', 'Poster or flyer', 'Goodles', 'Other'],
       required: true,
     },
     { key: 'first_contest', kind: 'single', label: 'Was this your first yo-yo contest?', options: ['Yes, first one', 'No, been before'] },
-    { key: 'rsvped', kind: 'single', label: 'Did you RSVP online before the contest?', options: ['Yes', 'No, just showed up', 'Not sure'] },
+    { key: 'rsvped', kind: 'single', label: 'Did you RSVP online before the contest?', options: ['Yes', 'No, just showed up', 'Not sure'], hideIf: STREAM_ONLY },
     {
       key: 'time_on_site', kind: 'single', label: 'How long did you stay?',
       options: ['Under 30 minutes', '30 min – 1 hour', '1–3 hours', '3+ hours'],
       midpoints: { 'Under 30 minutes': 0.25, '30 min – 1 hour': 0.75, '1–3 hours': 2, '3+ hours': 4 },
+      hideIf: STREAM_ONLY,
     },
-    { key: 'favorite_part', kind: 'multi', label: 'What did you enjoy most?', hint: 'Tap all that apply', options: ['Competitor routines', 'Top finishers / awards', 'Vendor tables', 'Learning to yo-yo', 'Goodles booth', 'The crowd / energy'] },
-    { key: 'come_back', kind: 'single', label: 'Would you come back next year?', options: ['Yes, and bring others', 'Yes', 'Maybe', 'No'] },
+    { key: 'favorite_part', kind: 'multi', label: 'What did you enjoy most?', hint: 'Tap all that apply', options: ['Competitor routines', 'Top finishers / awards', 'Stella Duellum', 'Vendor tables', 'Learning to yo-yo', 'Goodles booth', 'The crowd / energy'], hideIf: STREAM_ONLY },
+    { key: 'come_back', kind: 'single', label: 'Would you come back next year?', options: ['Yes, and bring others', 'Yes', 'Maybe', 'No'], hideIf: STREAM_ONLY },
+  ],
+};
+
+/** Spectators who watched the YoYo Contest Central livestream. */
+const streamSection: SurveySection = {
+  id: 'stream',
+  title: 'The Livestream',
+  blurb: 'The YoYo Contest Central stream on YouTube.',
+  showIf: WATCHED_STREAM,
+  questions: [
+    { key: 'stream_when', kind: 'single', label: 'Did you watch live or the replay?', options: ['Live', 'Replay later', 'Both'] },
+    {
+      key: 'stream_watch_time', kind: 'single', label: 'About how long did you watch?',
+      options: ['Under 15 minutes', '15–60 minutes', '1–3 hours', 'Most of the day'],
+      midpoints: { 'Under 15 minutes': 0.15, '15–60 minutes': 0.6, '1–3 hours': 2, 'Most of the day': 5 },
+    },
+    { key: 'stream_overall', kind: 'scale5', label: 'Overall, how was the stream?', scaleLabels: RATING_LABELS, required: true },
+    { key: 'stream_video', kind: 'scale5', label: 'How was the video quality?', scaleLabels: RATING_LABELS },
+    { key: 'stream_audio', kind: 'scale5', label: 'How was the audio?', hint: 'Music, MC, commentary', scaleLabels: RATING_LABELS },
+    { key: 'stream_see_tricks', kind: 'scale5', label: 'Could you actually see the tricks?', hint: 'Camera angles, framing, zoom', scaleLabels: RATING_LABELS },
+    { key: 'stream_follow', kind: 'scale5', label: 'Were names, divisions, and results easy to follow?', scaleLabels: RATING_LABELS },
+    { key: 'stream_reliability', kind: 'single', label: 'Did the stream hold up?', options: ['Smooth the whole time', 'A few hiccups', 'Kept buffering or dropping'] },
+    {
+      key: 'stream_wishlist', kind: 'multi', label: 'What would make the stream better?', hint: 'Tap all that apply',
+      options: ['Replays / slow-mo of big tricks', 'Score or ranking overlays', 'Competitor intros', 'More commentary', 'More camera angles', 'More chat interaction'],
+    },
+    {
+      key: 'stream_why_remote', kind: 'single', label: 'What kept you from coming in person?',
+      options: ['Too far to travel', 'Schedule conflict', 'Found out too late', 'Just prefer watching online', 'Other'], showIf: STREAM_ONLY,
+    },
+    {
+      key: 'stream_attend_next', kind: 'single', label: 'Would you come in person next year?',
+      options: ['Yes, planning on it', 'Maybe', "No, I'll watch the stream"], showIf: STREAM_ONLY,
+    },
+    { key: 'stream_feedback', kind: 'text', label: 'Anything else about the stream?', maxLength: 1000 },
   ],
 };
 
@@ -411,42 +514,42 @@ export const SURVEYS: Record<SurveyType, SurveyDef> = {
     eyebrow: 'Competitor Feedback',
     title: 'You’re the reason this contest exists.',
     intro: 'Win, lose, or somewhere in between, tell us how it felt to compete. About 5 minutes. Your answers shape VSYC-27.',
-    sections: [competitorDay, contestSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
+    sections: [competitorDay, contestSection(), duelSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
   },
   winner: {
     type: 'winner',
     eyebrow: 'Winner Feedback',
     title: 'You made the podium. Tell us how it went.',
     intro: 'Same survey as every competitor, plus a few questions about your prizes. About 6 minutes. Your answers shape VSYC-27 and help us keep great prize sponsors.',
-    sections: [competitorDay, winnerPrizes, contestSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
+    sections: [competitorDay, winnerPrizes, contestSection(), duelSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
   },
   spectator: {
     type: 'spectator',
     eyebrow: 'Spectator Feedback',
     title: 'You came to watch. Tell us how it went.',
-    intro: 'Whether you RSVP’d or just walked by, your answers help make next year bigger and better. About 5 minutes.',
-    sections: [spectatorDay, contestSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
+    intro: 'In person, walked by, or watched the stream: your answers help make next year bigger and better. About 5 minutes.',
+    sections: [spectatorDay, streamSection, contestSection(), duelSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
   },
   volunteer: {
     type: 'volunteer',
     eyebrow: 'Volunteer Feedback',
     title: 'You made September 19th work.',
     intro: 'Tell us what it was really like behind the scenes. About 5 minutes.',
-    sections: [volunteerDay, contestSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
+    sections: [volunteerDay, contestSection(), duelSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
   },
   vendor: {
     type: 'vendor',
     eyebrow: 'Vendor Feedback',
     title: 'Thanks for setting up shop at VSYC-26.',
     intro: 'Tell us how sales went and what would make vending better. About 5 minutes. Your numbers stay private.',
-    sections: [vendorDay, contestSection(), weekendSection({ includeVendorSpend: false }), goodlesSection(true), stayInTouchSection()],
+    sections: [vendorDay, contestSection(), duelSection(), weekendSection({ includeVendorSpend: false }), goodlesSection(true), stayInTouchSection()],
   },
   sponsor: {
     type: 'sponsor',
     eyebrow: 'Sponsor Feedback',
     title: 'Your support made VSYC-26 possible.',
     intro: 'Help us show what your sponsorship delivered and what would make it better. About 5 minutes.',
-    sections: [sponsorDay, contestSection(), weekendSection(), goodlesSection(true), stayInTouchSection()],
+    sections: [sponsorDay, contestSection(), duelSection(), weekendSection(), goodlesSection(true), stayInTouchSection()],
   },
 };
 
@@ -454,11 +557,32 @@ export function allQuestions(type: SurveyType): SurveyQuestion[] {
   return SURVEYS[type].sections.flatMap((s) => s.questions);
 }
 
+function conditionMet(c: Condition, answers: Record<string, unknown>): boolean {
+  const v = answers[c.key];
+  if (Array.isArray(v)) return v.some((x) => typeof x === 'string' && c.anyOf.includes(x));
+  return typeof v === 'string' && c.anyOf.includes(v);
+}
+
+function visible(item: { showIf?: Condition; hideIf?: Condition }, answers: Record<string, unknown>): boolean {
+  if (item.showIf && !conditionMet(item.showIf, answers)) return false;
+  if (item.hideIf && conditionMet(item.hideIf, answers)) return false;
+  return true;
+}
+
 export function isQuestionVisible(q: SurveyQuestion, answers: Record<string, unknown>): boolean {
-  if (!q.showIf) return true;
-  const v = answers[q.showIf.key];
-  if (Array.isArray(v)) return v.some((x) => typeof x === 'string' && q.showIf!.anyOf.includes(x));
-  return typeof v === 'string' && q.showIf.anyOf.includes(v);
+  return visible(q, answers);
+}
+
+export function isSectionVisible(s: SurveySection, answers: Record<string, unknown>): boolean {
+  return visible(s, answers);
+}
+
+/** Questions the respondent can actually see, given their answers so far. */
+export function visibleQuestions(type: SurveyType, answers: Record<string, unknown>): SurveyQuestion[] {
+  return SURVEYS[type].sections
+    .filter((s) => isSectionVisible(s, answers))
+    .flatMap((s) => s.questions)
+    .filter((q) => isQuestionVisible(q, answers));
 }
 
 export type SurveyAnswerValue = string | number | string[];
@@ -479,8 +603,7 @@ export function validateSurveyAnswers(
   const input = raw as Record<string, unknown>;
   const out: SurveyAnswers = {};
 
-  for (const q of allQuestions(type)) {
-    if (!isQuestionVisible(q, input)) continue;
+  for (const q of visibleQuestions(type, input)) {
     const v = input[q.key];
     const empty = v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
     if (empty) {
