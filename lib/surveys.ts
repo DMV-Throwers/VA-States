@@ -93,7 +93,15 @@ const DULLES_SPEND_MID: Record<string, number> = {
 
 const VENDOR_SPEND = ['$1–25', '$25–75', '$75–150', '$150+'] as const;
 const VENDOR_VISIT = ['Stopped and bought something', "Stopped but didn't buy", "Didn't stop at a vendor"] as const;
-const VENDORS = ['Freshly Dirty', 'Jake Bullock', 'Slow n Steady'] as const;
+// Matches "Who's Tabling" on dmvthrowers.club/vsyc26-merch.html.
+const VENDORS = [
+  'Freshly Dirty',
+  'Recess & Jake Bullock',
+  'Slow & Steady Bikes and Goods',
+  'YoYoSam.com',
+  'Unparalleled',
+  'Bmore YoYo Club',
+] as const;
 
 const AFTER_PARTY = ["Didn't know about it", "Didn't go", 'Went · spent $0', 'Went · $1–20', 'Went · $20–50', 'Went · $50+'] as const;
 const AFTER_PARTY_MID: Record<string, number> = {
@@ -175,7 +183,7 @@ function weekendSection({ includeVendorSpend = true } = {}): SurveySection {
     { key: 'group_size', kind: 'single', label: 'Including you, how many people were in your group?', options: GROUP_SIZE },
     { key: 'group_ages', kind: 'multi', label: 'Who was in your group?', hint: 'Tap all that apply', options: GROUP_AGES },
     { key: 'hotel_nights', kind: 'single', label: 'How many nights did you stay at a local hotel?', options: HOTEL_NIGHTS },
-    { key: 'hotel_group_rate', kind: 'single', label: 'VA States had a hotel group rate. Did you know about it?', options: GROUP_RATE },
+    { key: 'hotel_group_rate', kind: 'single', label: 'VA States had a $125 room block at the Courtyard by Marriott Dulles Town Center. Did you know about it?', options: GROUP_RATE },
     {
       key: 'weekend_spend', kind: 'single',
       label: 'About how much did your group spend on the trip?',
@@ -203,10 +211,19 @@ function weekendSection({ includeVendorSpend = true } = {}): SurveySection {
       options: VENDOR_SPEND, midpoints: DULLES_SPEND_MID,
       showIf: { key: 'vendor_visit', anyOf: ['Stopped and bought something'] },
     },
+    {
+      key: 'merch_raffle', kind: 'multi', label: 'Did you buy any of these?', hint: 'Merch and raffle money funds future contests',
+      options: ['VSYC-26 merch (buttons, tees)', 'Raffle tickets', 'Bmore YoYo Club merch', 'Pronoun pins', 'None of these'],
+    },
+    {
+      key: 'miniso_store', kind: 'single', label: 'Did you visit the MINISO store in Dulles Town Center?',
+      hint: 'MINISO donated raffle prizes and sent their mascot',
+      options: ['Yes, and bought something', 'Yes, just looked', 'No'],
+    },
     { key: 'amenities_used', kind: 'multi', label: 'Which amenities did you use that day?', hint: 'Tap all that apply', options: AMENITIES },
     {
       key: 'after_party', kind: 'single',
-      label: 'Did you go to the after-party? About how much did you spend?',
+      label: 'Did you go to the after-party at Lost Rhino Brewing? About how much did you spend?',
       options: AFTER_PARTY, midpoints: AFTER_PARTY_MID,
     },
   ];
@@ -268,41 +285,54 @@ function goodlesSection(sponsorView = false): SurveySection {
   };
 }
 
-const DUEL_INVOLVEMENT = [
-  'Played in the bracket',
-  'Watched it in person',
-  'Watched it on the stream',
-  'Missed it',
-  "Didn't know it was happening",
-] as const;
-const DUEL_ENGAGED: Condition = { key: 'duel_involvement', anyOf: ['Played in the bracket', 'Watched it in person', 'Watched it on the stream'] };
-const DUEL_PLAYED: Condition = { key: 'duel_involvement', anyOf: ['Played in the bracket'] };
+const DUEL_COMPETED: Condition = { key: 'duel_competed', anyOf: ['Yes'] };
+const DUEL_NOT_COMPETED: Condition = { key: 'duel_competed', anyOf: ['No'] };
+const DUEL_WATCHED: Condition = { key: 'duel_watched', anyOf: ['Watched it in person', 'Watched it on the stream'] };
+/** Competed, or watched — either way they saw it. */
+const DUEL_SAW_IT: Condition = { key: 'duel_engaged', anyOf: ['yes'] };
 
-/** Stella Duellum: the Dueling Stars guest bracket run by Prismatic Stars. */
+/**
+ * Stella Duellum: the Dueling Stars guest bracket run by Prismatic Stars.
+ * Players get the player questions; everyone else is asked whether they
+ * watched, and only watchers see the rest. Missed it = one or two taps.
+ */
 function duelSection(): SurveySection {
   return {
     id: 'duel',
     title: 'Stella Duellum',
-    blurb: 'The Dueling Stars bracket, hosted by Anneurismz for Prismatic Stars: one-minute routines, random music, chat-poll winners.',
+    blurb: 'The Dueling Stars bracket at noon, hosted by Anneurismz for Prismatic Stars: one-minute routines, random music, chat-poll winners.',
     questions: [
-      { key: 'duel_involvement', kind: 'multi', label: 'Did you catch Stella Duellum?', hint: 'Tap all that apply', options: DUEL_INVOLVEMENT },
-      { key: 'duel_rating', kind: 'scale5', label: 'How fun was it?', scaleLabels: ['1 · Not for me', '5 · Loved it'], showIf: DUEL_ENGAGED },
+      { key: 'duel_competed', kind: 'single', label: 'Did you compete in Stella Duellum?', options: ['Yes', 'No'], required: true },
+
+      // Players
+      { key: 'duel_player_rating', kind: 'scale5', label: 'How much did you enjoy competing in it?', scaleLabels: ['1 · Not for me', '5 · Loved it'], showIf: DUEL_COMPETED },
+      { key: 'duel_rounds', kind: 'single', label: 'How far did you get?', options: ['Out in my first battle', 'Won at least one battle', 'Semifinal or final'], showIf: DUEL_COMPETED },
       {
-        key: 'duel_format', kind: 'single', label: 'One-minute routines to random music: keep that format?',
-        options: ['Keep it exactly', 'Keep it, with tweaks', 'Change it up'], showIf: DUEL_ENGAGED,
+        key: 'duel_format', kind: 'single', label: 'One-minute routines to random music, no repeated routines: keep that format?',
+        options: ['Keep it exactly', 'Keep it, with tweaks', 'Change it up'], showIf: DUEL_COMPETED,
       },
+      { key: 'duel_vote_fair', kind: 'scale5', label: 'Did the YouTube chat-poll voting feel fair?', scaleLabels: ['1 · Not at all', '5 · Totally fair'], showIf: DUEL_COMPETED },
+      { key: 'duel_signup', kind: 'scale5', label: 'How easy was signing up and knowing when you were up?', scaleLabels: RATING_LABELS, showIf: DUEL_COMPETED },
+      { key: 'duel_play_again', kind: 'single', label: 'Would you play Stella Duellum again?', options: ['Yes', 'Maybe', 'No'], showIf: DUEL_COMPETED },
+
+      // Everyone else
+      {
+        key: 'duel_watched', kind: 'single', label: 'Did you watch it?',
+        options: ['Watched it in person', 'Watched it on the stream', 'Missed it', "Didn't know it was happening"], showIf: DUEL_NOT_COMPETED,
+      },
+      { key: 'duel_rating', kind: 'scale5', label: 'How fun was it to watch?', scaleLabels: ['1 · Not for me', '5 · Loved it'], showIf: DUEL_WATCHED },
       {
         key: 'duel_voted', kind: 'single', label: 'Did you vote in the YouTube chat poll?',
-        options: ['Yes', "No, didn't know how", "No, wasn't on the stream"], showIf: DUEL_ENGAGED,
+        options: ['Yes', "No, didn't know how", "No, wasn't on the stream"], showIf: DUEL_WATCHED,
       },
-      { key: 'duel_vote_fair', kind: 'scale5', label: 'Did chat-poll voting feel fair?', scaleLabels: ['1 · Not at all', '5 · Totally fair'], showIf: DUEL_PLAYED },
-      { key: 'duel_play_again', kind: 'single', label: 'Would you play Stella Duellum again?', options: ['Yes', 'Maybe', 'No'], showIf: DUEL_PLAYED },
+
+      // Anyone who played or watched
       {
         key: 'duel_next_year', kind: 'single', label: 'Should Stella Duellum come back for VSYC-27?',
-        options: ['Yes, make it bigger', 'Yes, same size', 'Not sure', 'No'], showIf: DUEL_ENGAGED,
+        options: ['Yes, make it bigger', 'Yes, same size', 'Not sure', 'No'], showIf: DUEL_SAW_IT,
       },
-      { key: 'prismatic_aware', kind: 'single', label: 'Before VSYC-26, had you heard of Prismatic Stars?', options: ['Yes', 'No'], showIf: DUEL_ENGAGED },
-      { key: 'duel_feedback', kind: 'text', label: 'Anything for Prismatic Stars or Anneurismz?', maxLength: 1000, showIf: DUEL_ENGAGED },
+      { key: 'prismatic_aware', kind: 'single', label: 'Before VSYC-26, had you heard of Prismatic Stars?', options: ['Yes', 'No'], showIf: DUEL_SAW_IT },
+      { key: 'duel_feedback', kind: 'text', label: 'Anything for Prismatic Stars or Anneurismz?', maxLength: 1000, showIf: DUEL_SAW_IT },
     ],
   };
 }
@@ -325,19 +355,32 @@ function stayInTouchSection(): SurveySection {
 
 // ─── Per-role opening blocks ────────────────────────────────────────────────
 
+const TOOLS_USED = [
+  'Live run order board',
+  'Online results page',
+  'YoYo Pro Clicker app (couch judging)',
+  'None of these',
+] as const;
+
 const competitorDay: SurveySection = {
   id: 'day',
   title: 'Your Day',
   questions: [
-    { key: 'divisions', kind: 'multi', label: 'Which division(s) did you compete in?', options: ['1A', 'X Division', 'Sport / Beginner / Junior'], required: true },
+    {
+      key: 'respondent', kind: 'single', label: 'Who\u2019s filling this out?',
+      hint: 'Parents of younger competitors get this survey too',
+      options: ['I competed', 'A parent or guardian of a competitor'], required: true,
+    },
+    { key: 'divisions', kind: 'multi', label: 'Which division(s) did you (or your competitor) compete in?', options: ['1A', 'X Division', 'Sport / Beginner / Junior'], required: true },
     { key: 'registration_rating', kind: 'scale5', label: 'How was registration, music upload, and email before the day?', scaleLabels: RATING_LABELS },
-    { key: 'judging_rating', kind: 'scale5', label: 'Did the judging feel fair and well explained?', scaleLabels: RATING_LABELS },
+    { key: 'judging_rating', kind: 'scale5', label: 'Did the judging (NYYL ruleset) feel fair and well explained?', scaleLabels: RATING_LABELS },
     { key: 'schedule_rating', kind: 'scale5', label: 'How did the schedule and flow feel on the day?', hint: 'Check-in, run order, downtime', scaleLabels: RATING_LABELS },
     { key: 'stage_rating', kind: 'scale5', label: 'How were the stage, sound, and practice space for your freestyle?', scaleLabels: RATING_LABELS },
     {
       key: 'format_preference', kind: 'single', label: 'VSYC-26 had no prelims. For VSYC-27, would you rather:',
       options: ['Keep it: everyone gets one full freestyle', 'Add prelims and finals', 'No preference'],
     },
+    { key: 'tools_used', kind: 'multi', label: 'Did you use any of these on the day?', hint: 'Tap all that apply', options: TOOLS_USED },
     { key: 'compete_next_year', kind: 'single', label: 'Will you compete at VSYC-27?', options: ['Yes', 'Probably', 'Not sure', 'No'] },
   ],
 };
@@ -360,7 +403,8 @@ const spectatorDay: SurveySection = {
       midpoints: { 'Under 30 minutes': 0.25, '30 min – 1 hour': 0.75, '1–3 hours': 2, '3+ hours': 4 },
       hideIf: STREAM_ONLY,
     },
-    { key: 'favorite_part', kind: 'multi', label: 'What did you enjoy most?', hint: 'Tap all that apply', options: ['Competitor routines', 'Top finishers / awards', 'Stella Duellum', 'Vendor tables', 'Learning to yo-yo', 'Goodles booth', 'The crowd / energy'], hideIf: STREAM_ONLY },
+    { key: 'favorite_part', kind: 'multi', label: 'What did you enjoy most?', hint: 'Tap all that apply', options: ['Competitor routines', 'Closing ceremony / awards', 'Stella Duellum', 'Vendor tables', 'Maker Corner', 'Goodles booth', 'MINISO mascot', 'Raffle', 'The crowd / energy'], hideIf: STREAM_ONLY },
+    { key: 'tools_used', kind: 'multi', label: 'Did you use any of these?', hint: 'Tap all that apply', options: TOOLS_USED },
     { key: 'come_back', kind: 'single', label: 'Would you come back next year?', options: ['Yes, and bring others', 'Yes', 'Maybe', 'No'], hideIf: STREAM_ONLY },
   ],
 };
@@ -427,13 +471,24 @@ const sponsorDay: SurveySection = {
   title: 'Your Sponsorship',
   questions: [
     { key: 'sponsor_org', kind: 'short', label: 'Brand / organization', required: true, maxLength: 120 },
-    { key: 'sponsor_tier', kind: 'single', label: 'Your sponsorship tier', options: ['Presenting', 'Diamond', 'Platinum', 'Gold', 'Silver', 'Bronze', 'In-kind / local'] },
+    {
+      key: 'sponsor_tier', kind: 'single', label: 'Your sponsorship tier',
+      options: ['Presenting (Diamond)', 'Platinum', 'Gold', 'Silver', 'Bronze', 'In-kind', 'Partner / club'],
+    },
     {
       key: 'sponsor_goals', kind: 'multi', label: 'What were you hoping to get out of it?', hint: 'Tap all that apply',
       options: ['Brand awareness', 'Product sampling', 'Sales', 'Leads / sign-ups', 'Social content', 'Community goodwill'],
     },
     { key: 'visibility_rating', kind: 'scale5', label: 'Did your brand get the visibility you expected?', hint: 'Signage, MC shoutouts, table, social', scaleLabels: RATING_LABELS },
     { key: 'engagement', kind: 'text', label: 'What impact did you see?', hint: 'Samples handed out, sign-ups, new followers, leads. Numbers help.', maxLength: 1000 },
+    {
+      key: 'sponsor_delivered', kind: 'single', label: 'Did you get everything your tier promised?',
+      options: ['Yes, everything', 'Mostly', 'Some things were missing'],
+    },
+    {
+      key: 'sponsor_benefits_value', kind: 'multi', label: 'Which benefits were worth the most to you?', hint: 'Tap all that apply',
+      options: ['Table on the floor', 'MC shoutouts', 'Logo on banner and flyers', 'Livestream credit', 'Social media posts', 'Free competitor registrations', 'Raffle / prize placement'],
+    },
     { key: 'value_rating', kind: 'scale5', label: 'Did we deliver on those goals for what you put in?', scaleLabels: RATING_LABELS },
     { key: 'sponsor_next_year', kind: 'single', label: 'Would you sponsor VSYC-27?', options: ['Yes, same tier', 'Yes, different tier', 'Maybe', 'No'] },
     { key: 'clearer_yes', kind: 'text', label: 'What would make next year an easy yes?', maxLength: 1000 },
@@ -442,13 +497,14 @@ const sponsorDay: SurveySection = {
 
 const PRIZE_RATING_LABELS: [string, string] = ['1 · Meh', '5 · Loved it'];
 
-/** Only sent to the top 3 in each division (see lib/standings.ts). */
+/** Only sent to the top 3 and the VA State Champion in each division (see lib/standings.ts). */
 const winnerPrizes: SurveySection = {
   id: 'prizes',
   title: 'Your Prizes',
-  blurb: 'You placed. Congrats. Tell us what you thought of what you took home.',
+  blurb: 'Congrats. Tell us what you thought of what you took home.',
   questions: [
-    { key: 'placement', kind: 'single', label: 'Where did you place?', hint: 'If you placed in two divisions, pick your best', options: ['1st', '2nd', '3rd'], required: true },
+    { key: 'placement', kind: 'single', label: 'Where did you place?', hint: 'If you placed in two divisions, pick your best',
+      options: ['1st', '2nd', '3rd', 'VA State Champion (top Virginia finisher)'], required: true },
     {
       key: 'prizes_known_before', kind: 'single', label: 'Did you know about the prizes before you competed?',
       options: ['Yes, and it made me more excited to compete', 'Yes, but it didn\u2019t change anything', 'No'],
@@ -487,7 +543,7 @@ const vendorDay: SurveySection = {
   title: 'Your Table',
   blurb: 'Your numbers stay private. We only share totals across all vendors.',
   questions: [
-    { key: 'vendor_name', kind: 'single', label: 'Which vendor are you?', options: ['Freshly Dirty', 'Jake Bullock', 'Slow n Steady', 'Other'], required: true },
+    { key: 'vendor_name', kind: 'single', label: 'Which vendor are you?', options: [...VENDORS, 'Other'], required: true },
     { key: 'vendor_name_other', kind: 'short', label: 'Vendor name', maxLength: 120, showIf: { key: 'vendor_name', anyOf: ['Other'] } },
     { key: 'vendor_sales', kind: 'single', label: 'About how much did you sell (gross)?', options: SALES, midpoints: SALES_MID, required: true },
     { key: 'vendor_vs_expectations', kind: 'single', label: 'How did sales compare to what you expected?', options: ['Beat expectations', 'About what we expected', 'Below expectations'] },
@@ -500,7 +556,8 @@ const vendorDay: SurveySection = {
     { key: 'vendor_next_year', kind: 'single', label: 'Would you vend at VSYC-27?', options: ['Yes', 'Maybe', 'No'] },
     {
       key: 'vendor_fair_fee', kind: 'single', label: 'What table fee would still be worth it to you next year?',
-      options: ['Free only', 'Up to $25', '$25–50', '$50–100', '$100+'],
+      hint: 'This year: $75 table add-on, $50 for hobby clubs',
+      options: ['Free only', 'Up to $50', '$50–75', '$75–100', '$100+'],
     },
     { key: 'vendor_improve', kind: 'text', label: 'What would make vending better next year?', hint: 'Table size, placement, power, MC shoutouts, pricing', maxLength: 1000 },
   ],
@@ -519,7 +576,7 @@ export const SURVEYS: Record<SurveyType, SurveyDef> = {
   winner: {
     type: 'winner',
     eyebrow: 'Winner Feedback',
-    title: 'You made the podium. Tell us how it went.',
+    title: 'You placed. Tell us how it went.',
     intro: 'Same survey as every competitor, plus a few questions about your prizes. About 6 minutes. Your answers shape VSYC-27 and help us keep great prize sponsors.',
     sections: [competitorDay, winnerPrizes, contestSection(), duelSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
   },
@@ -557,8 +614,19 @@ export function allQuestions(type: SurveyType): SurveyQuestion[] {
   return SURVEYS[type].sections.flatMap((s) => s.questions);
 }
 
+/** Values derived from other answers, usable in conditions like real answers. */
+function derived(key: string, answers: Record<string, unknown>): unknown {
+  if (key === 'duel_engaged') {
+    const watched = answers.duel_watched;
+    const saw = answers.duel_competed === 'Yes'
+      || watched === 'Watched it in person' || watched === 'Watched it on the stream';
+    return saw ? 'yes' : undefined;
+  }
+  return answers[key];
+}
+
 function conditionMet(c: Condition, answers: Record<string, unknown>): boolean {
-  const v = answers[c.key];
+  const v = derived(c.key, answers);
   if (Array.isArray(v)) return v.some((x) => typeof x === 'string' && c.anyOf.includes(x));
   return typeof v === 'string' && c.anyOf.includes(v);
 }
@@ -577,12 +645,31 @@ export function isSectionVisible(s: SurveySection, answers: Record<string, unkno
   return visible(s, answers);
 }
 
+/**
+ * Walks the survey in order and works out what the respondent actually sees.
+ * Conditions only count answers to questions that are themselves visible, so
+ * a stale answer left behind after someone changes their mind (e.g. picked
+ * "No" to Stella Duellum after first picking "Yes") can't unlock anything.
+ */
+export function surveyPlan(type: SurveyType, answers: Record<string, unknown>) {
+  const effective: Record<string, unknown> = {};
+  const sectionIds = new Set<string>();
+  const questions: SurveyQuestion[] = [];
+  for (const s of SURVEYS[type].sections) {
+    if (!isSectionVisible(s, effective)) continue;
+    sectionIds.add(s.id);
+    for (const q of s.questions) {
+      if (!isQuestionVisible(q, effective)) continue;
+      questions.push(q);
+      if (answers[q.key] !== undefined) effective[q.key] = answers[q.key];
+    }
+  }
+  return { sectionIds, questionKeys: new Set(questions.map((q) => q.key)), questions };
+}
+
 /** Questions the respondent can actually see, given their answers so far. */
 export function visibleQuestions(type: SurveyType, answers: Record<string, unknown>): SurveyQuestion[] {
-  return SURVEYS[type].sections
-    .filter((s) => isSectionVisible(s, answers))
-    .flatMap((s) => s.questions)
-    .filter((q) => isQuestionVisible(q, answers));
+  return surveyPlan(type, answers).questions;
 }
 
 export type SurveyAnswerValue = string | number | string[];

@@ -14,10 +14,10 @@ const AUDIT_ACTION = 'survey_invites_sent';
 
 const AUDIENCES: Record<string, { label: string; emailLabel: string; survey: string; extraLine?: string }> = {
   winner: {
-    label: 'podium finishers',
+    label: 'podium finishers and VA State Champions',
     emailLabel: 'competitors',
     survey: 'winner',
-    extraLine: 'You made the podium, so we also want to hear what you thought of your prizes, including the Miniso basket and the Goodles additions.',
+    extraLine: 'You placed, so we also want to hear what you thought of your prizes, including the MINISO basket and the Goodles additions.',
   },
   competitor: { label: 'competitors', emailLabel: 'competitors', survey: 'competitor' },
   spectator: { label: 'spectators', emailLabel: 'spectators', survey: 'spectator' },

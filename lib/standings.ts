@@ -87,17 +87,33 @@ export interface Winner {
   registration_id: string;
   display_name: string;
   division: Division;
+  /** 1–3 for the podium; 0 for the division's VA State Champion. */
   place: number;
 }
 
-/** Top PRIZE_PLACES per division, in the same order the public board shows. */
+function isVirginian(s: Standing): boolean {
+  const st = (s.state ?? '').trim().toUpperCase();
+  return st === 'VA' || st === 'VIRGINIA';
+}
+
+/**
+ * Top PRIZE_PLACES per division, in the same order the public board shows,
+ * plus each division's VA State Champion (top Virginia finisher) when they
+ * aren't already on the podium — matching the results page.
+ */
 export function winnersFrom(standings: Record<Division, Standing[]>): Winner[] {
-  return DIVISIONS.flatMap(({ code }) =>
-    standings[code].slice(0, PRIZE_PLACES).map((s, i) => ({
+  return DIVISIONS.flatMap(({ code }) => {
+    const board = standings[code];
+    const podium: Winner[] = board.slice(0, PRIZE_PLACES).map((s, i) => ({
       registration_id: s.registration_id,
       display_name: s.display_name,
       division: code,
       place: i + 1,
-    })),
-  );
+    }));
+    const vaChamp = board.find(isVirginian);
+    if (vaChamp && board.indexOf(vaChamp) >= PRIZE_PLACES) {
+      podium.push({ registration_id: vaChamp.registration_id, display_name: vaChamp.display_name, division: code, place: 0 });
+    }
+    return podium;
+  });
 }

@@ -3,9 +3,7 @@
 import { FormEvent, useState } from 'react';
 import {
   SURVEYS,
-  isQuestionVisible,
-  isSectionVisible,
-  visibleQuestions,
+  surveyPlan,
   type SurveyAnswerValue,
   type SurveyQuestion,
   type SurveySource,
@@ -26,7 +24,8 @@ export default function SurveyForm({
 }) {
   const def = SURVEYS[type];
   const [answers, setAnswers] = useState<Answers>(initialAnswers);
-  const sections = def.sections.filter((s) => isSectionVisible(s, answers));
+  const plan = surveyPlan(type, answers);
+  const sections = def.sections.filter((s) => plan.sectionIds.has(s.id));
   const totalSteps = sections.length + 1;
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
@@ -57,7 +56,7 @@ export default function SurveyForm({
     e.preventDefault();
     setError('');
 
-    const required = visibleQuestions(type, answers).filter((q) => q.required && answers[q.key] === undefined);
+    const required = plan.questions.filter((q) => q.required && answers[q.key] === undefined);
     if (required.length > 0) {
       setMissing(new Set(required.map((q) => q.key)));
       setError('A few required questions still need an answer. Look for the red bar.');
@@ -145,7 +144,7 @@ export default function SurveyForm({
           </div>
           <div className="space-y-7">
             {section.questions
-              .filter((q) => isQuestionVisible(q, answers))
+              .filter((q) => plan.questionKeys.has(q.key))
               .map((q) => (
                 <Question
                   key={q.key}

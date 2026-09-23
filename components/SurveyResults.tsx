@@ -40,7 +40,7 @@ const TYPE_LABELS: Record<SurveyType, string> = {
   sponsor: 'Sponsors',
 };
 
-const PLACE_LABELS = ['', '1st', '2nd', '3rd'];
+const PLACE_LABELS = ['VA State Champion', '1st', '2nd', '3rd'];
 
 const HOTEL_NIGHTS: Record<string, number> = { '0 · Day trip': 0, '1 night': 1, '2 nights': 2, '3+ nights': 3 };
 
@@ -175,8 +175,8 @@ export default function SurveyResults({ token }: { token: string }) {
     const vendorVisit = str('vendor_visit');
     const watch = str('watch_mode');
     const reliability = str('stream_reliability');
-    const duel = filtered.map((r) => r.answers.duel_involvement).filter((v): v is string[] => Array.isArray(v));
-    const duelEngaged = duel.filter((a) => a.some((x) => x === 'Played in the bracket' || x.startsWith('Watched'))).length;
+    const duelCompeted = str('duel_competed');
+    const duelWatched = str('duel_watched');
     const duelBack = str('duel_next_year');
 
     return {
@@ -221,9 +221,11 @@ export default function SurveyResults({ token }: { token: string }) {
       reliabilityN: reliability.length,
       streamComeInPerson: str('stream_attend_next').filter((v) => v === 'Yes, planning on it').length,
       streamAttendN: str('stream_attend_next').length,
-      duelN: duel.length,
-      duelEngaged,
-      duelDidntKnow: duel.filter((a) => a.includes("Didn't know it was happening")).length,
+      duelN: duelCompeted.length,
+      duelPlayers: duelCompeted.filter((v) => v === 'Yes').length,
+      duelWatchers: duelWatched.filter((v) => v.startsWith('Watched')).length,
+      duelDidntKnow: duelWatched.filter((v) => v === "Didn't know it was happening").length,
+      duelPlayerRating: avg(num('duel_player_rating')),
       duelRating: avg(num('duel_rating')),
       duelBackYes: duelBack.filter((v) => v.startsWith('Yes')).length,
       duelBackN: duelBack.length,
@@ -441,8 +443,8 @@ export default function SurveyResults({ token }: { token: string }) {
             <section>
               <h3 className="text-xs font-black tracking-caps text-gold mb-3">STELLA DUELLUM</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Stat label="Played or watched" value={pct(kpis.duelEngaged, kpis.duelN)} note={`${kpis.duelEngaged} of ${kpis.duelN}`} />
-                <Stat label="Fun rating" value={kpis.duelRating ? `${kpis.duelRating.toFixed(1)} / 5` : '—'} />
+                <Stat label="Competed · watched" value={`${kpis.duelPlayers} · ${kpis.duelWatchers}`} note={`of ${kpis.duelN} who answered`} />
+                <Stat label="Player enjoyment" value={kpis.duelPlayerRating ? `${kpis.duelPlayerRating.toFixed(1)} / 5` : '—'} note={`Watchers: ${kpis.duelRating ? kpis.duelRating.toFixed(1) : '—'} / 5`} />
                 <Stat label="Want it back" value={pct(kpis.duelBackYes, kpis.duelBackN)} note={`${kpis.duelBackYes} of ${kpis.duelBackN}`} />
                 <Stat label="Didn't know it was on" value={pct(kpis.duelDidntKnow, kpis.duelN)} note={`${kpis.duelDidntKnow} of ${kpis.duelN}`} />
               </div>
