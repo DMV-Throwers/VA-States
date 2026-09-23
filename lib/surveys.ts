@@ -97,9 +97,15 @@ const VENDOR_VISIT = ['Stopped and bought something', "Stopped but didn't buy", 
 // Who actually tabled and sold product on the day (confirmed after the event —
 // the site's "Who's Tabling" list was longer than who showed up).
 // Recess and Jake Bullock shared one booth: one option for shoppers, separate
-// options for the vendors themselves so each can answer.
-const VENDORS = ['Freshly Dirty', 'Recess & Jake Bullock (shared booth)', 'Slow & Steady Bikes and Goods'] as const;
-const VENDOR_RESPONDENTS = ['Freshly Dirty', 'Recess', 'Jake Bullock', 'Slow & Steady Bikes and Goods'] as const;
+// options for the vendors themselves so each can answer. Bmore YoYo Club sold
+// the VSYC-26 contest merch alongside their own club merch.
+const VENDORS = [
+  'Freshly Dirty',
+  'Recess & Jake Bullock (shared booth)',
+  'Slow & Steady Bikes and Goods',
+  'Bmore YoYo Club (contest + club merch, nail painting)',
+] as const;
+const VENDOR_RESPONDENTS = ['Freshly Dirty', 'Recess', 'Jake Bullock', 'Slow & Steady Bikes and Goods', 'Bmore YoYo Club'] as const;
 
 const AFTER_PARTY = ["Didn't know about it", "Didn't go", 'Went · spent $0', 'Went · $1–20', 'Went · $20–50', 'Went · $50+'] as const;
 const AFTER_PARTY_MID: Record<string, number> = {
@@ -227,8 +233,8 @@ function weekendSection({ includeVendorSpend = true } = {}): SurveySection {
       showIf: { key: 'vendor_visit', anyOf: ['Stopped and bought something'] },
     },
     {
-      key: 'merch_raffle', kind: 'multi', label: 'Did you buy any of these?', hint: 'Merch and raffle money funds future contests',
-      options: ['VSYC-26 merch (buttons, tees)', 'Raffle tickets', 'None of these'],
+      key: 'merch_raffle', kind: 'multi', label: 'Did you buy any of these?', hint: 'Contest merch and raffle money funds future contests',
+      options: ['VSYC-26 contest merch (shirts, buttons, pronoun pins)', 'Bmore YoYo Club club merch', 'Raffle tickets', 'None of these'],
     },
     {
       key: 'miniso_store', kind: 'single', label: 'Did you visit the MINISO store in Dulles Town Center?',
@@ -426,7 +432,7 @@ const spectatorDay: SurveySection = {
       midpoints: { 'Under 30 minutes': 0.25, '30 min – 1 hour': 0.75, '1–3 hours': 2, '3+ hours': 4 },
       hideIf: STREAM_ONLY,
     },
-    { key: 'favorite_part', kind: 'multi', label: 'What did you enjoy most?', hint: 'Tap all that apply', options: ['Competitor routines', 'Closing ceremony / awards', 'Stella Duellum', 'Vendor tables', 'Maker Corner', 'Goodles booth', 'MINISO mascot', 'Raffle', 'The crowd / energy'], hideIf: STREAM_ONLY },
+    { key: 'favorite_part', kind: 'multi', label: 'What did you enjoy most?', hint: 'Tap all that apply', options: ['Competitor routines', 'Closing ceremony / awards', 'Stella Duellum', 'Vendor tables', 'Maker Corner', 'Goodles booth', 'MINISO mascot', 'Nail painting at Bmore YoYo Club', 'Raffle', 'The crowd / energy'], hideIf: STREAM_ONLY },
     { key: 'tools_used', kind: 'multi', label: 'Did you use any of these?', hint: 'Tap all that apply', options: TOOLS_USED },
     { key: 'come_back', kind: 'single', label: 'Would you come back next year?', options: ['Yes, and bring others', 'Yes', 'Maybe', 'No'], hideIf: STREAM_ONLY },
   ],
