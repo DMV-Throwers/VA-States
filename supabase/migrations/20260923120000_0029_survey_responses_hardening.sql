@@ -10,6 +10,8 @@
 --    POST /api/survey (rate limited, honeypot, validated against lib/surveys.ts)
 --    with the service role, so nothing needs direct anon write access. The
 --    table had 0 rows when this was written.
+--  * Allow two more survey types: 'winner' (top 3 per division — competitor
+--    questions plus prizes) and 'vendor' (sales + vending experience).
 --  * Add `source` (email / live / qr / social / direct) so results can be
 --    split by how people reached the survey.
 --  * Cap payload size so one request can't stuff the table.
@@ -28,6 +30,12 @@ CREATE TABLE IF NOT EXISTS public.vsyc26_survey_responses (
 ALTER TABLE public.vsyc26_survey_responses ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "anon can insert survey responses" ON public.vsyc26_survey_responses;
+
+ALTER TABLE public.vsyc26_survey_responses
+  DROP CONSTRAINT IF EXISTS vsyc26_survey_responses_survey_type_check;
+ALTER TABLE public.vsyc26_survey_responses
+  ADD CONSTRAINT vsyc26_survey_responses_survey_type_check
+  CHECK (survey_type IN ('competitor','winner','spectator','volunteer','vendor','sponsor'));
 
 ALTER TABLE public.vsyc26_survey_responses
   ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'direct';

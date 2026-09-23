@@ -511,6 +511,8 @@ export interface SurveyInviteRecipient {
 interface SurveyInviteBatchParams {
   audienceLabel: string;
   surveyUrl: string;
+  /** Optional audience-specific paragraph, e.g. the prize ask for winners. */
+  extraLine?: string;
   recipients: SurveyInviteRecipient[];
 }
 
@@ -541,8 +543,8 @@ export async function sendSurveyInviteBatch(p: SurveyInviteBatchParams): Promise
           to: r.to,
           replyTo: REPLY_TO,
           subject: 'How was VSYC-26? 4 minutes to shape VSYC-27',
-          html: buildSurveyInviteHtml(r.firstName, p.audienceLabel, p.surveyUrl),
-          text: buildSurveyInviteText(r.firstName, p.audienceLabel, p.surveyUrl),
+          html: buildSurveyInviteHtml(r.firstName, p.audienceLabel, p.surveyUrl, p.extraLine),
+          text: buildSurveyInviteText(r.firstName, p.audienceLabel, p.surveyUrl, p.extraLine),
         })),
       );
       if (error) {
@@ -558,11 +560,12 @@ export async function sendSurveyInviteBatch(p: SurveyInviteBatchParams): Promise
   return result;
 }
 
-function buildSurveyInviteHtml(firstName: string, audienceLabel: string, surveyUrl: string): string {
+function buildSurveyInviteHtml(firstName: string, audienceLabel: string, surveyUrl: string, extraLine?: string): string {
   const url = esc(surveyUrl);
   return emailWrap(`
     <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;color:#ffffff;margin:0 0 16px;">Thank you, ${esc(firstName)}.</h1>
     <p style="font-size:0.95rem;line-height:1.6;margin:0 0 16px;">VSYC-26 happened because of ${esc(audienceLabel)} like you. Now we want to hear how it went: what worked, what didn't, and what would bring you back.</p>
+    ${extraLine ? `<p style="font-size:0.95rem;line-height:1.6;margin:0 0 16px;color:#e8c97a;">${esc(extraLine)}</p>` : ''}
     <p style="font-size:0.95rem;line-height:1.6;margin:0 0 24px;">It takes about 4 minutes. Every answer goes straight into planning VSYC-27.</p>
     <a href="${url}" style="display:inline-block;background:#B80000;color:#ffffff;text-decoration:none;font-weight:800;letter-spacing:0.12em;font-size:0.8rem;padding:14px 28px;">TAKE THE SURVEY →</a>
     <p style="font-size:0.75rem;color:#8090b8;margin:24px 0 0;">Or paste this link: <a href="${url}" style="color:#C9A84C;">${url}</a></p>
@@ -570,12 +573,13 @@ function buildSurveyInviteHtml(firstName: string, audienceLabel: string, surveyU
   `);
 }
 
-function buildSurveyInviteText(firstName: string, audienceLabel: string, surveyUrl: string): string {
+function buildSurveyInviteText(firstName: string, audienceLabel: string, surveyUrl: string, extraLine?: string): string {
   return [
     `Thank you, ${firstName}.`,
     '',
     `VSYC-26 happened because of ${audienceLabel} like you. Now we want to hear how it went: what worked, what didn't, and what would bring you back.`,
     '',
+    ...(extraLine ? [extraLine, ''] : []),
     'It takes about 4 minutes. Every answer goes straight into planning VSYC-27.',
     '',
     `Take the survey: ${surveyUrl}`,

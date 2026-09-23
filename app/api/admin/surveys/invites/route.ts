@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAdminRequest } from '@/lib/auth/admin-request';
 import { logAudit } from '@/lib/audit';
 import { sendSurveyInviteBatch, type SurveyInviteRecipient } from '@/lib/email';
+import { fetchStandings, winnersFrom, type Winner } from '@/lib/standings';
 
 // Resend batch sends ~100 emails per request; give a few hundred room to finish.
 export const maxDuration = 60;
@@ -11,27 +12,41 @@ export const maxDuration = 60;
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://register.dmvthrowers.club';
 const AUDIT_ACTION = 'survey_invites_sent';
 
-const AUDIENCES = {
-  competitor: { label: 'competitors', survey: 'competitor' },
-  spectator: { label: 'spectators', survey: 'spectator' },
-  volunteer: { label: 'volunteers', survey: 'volunteer' },
-} as const;
-type Audience = keyof typeof AUDIENCES;
+const AUDIENCES: Record<string, { label: string; emailLabel: string; survey: string; extraLine?: string }> = {
+  winner: {
+    label: 'podium finishers',
+    emailLabel: 'competitors',
+    survey: 'winner',
+    extraLine: 'You made the podium, so we also want to hear what you thought of your prizes, including the Miniso basket and the Goodles additions.',
+  },
+  competitor: { label: 'competitors', emailLabel: 'competitors', survey: 'competitor' },
+  spectator: { label: 'spectators', emailLabel: 'spectators', survey: 'spectator' },
+  volunteer: { label: 'volunteers', emailLabel: 'volunteers', survey: 'volunteer' },
+};
+type Audience = 'winner' | 'competitor' | 'spectator' | 'volunteer';
 
 function isAudience(v: unknown): v is Audience {
-  return typeof v === 'string' && v in AUDIENCES;
+  return typeof v === 'string' && Object.hasOwn(AUDIENCES, v);
 }
 
-async function loadRecipients(audience: Audience): Promise<SurveyInviteRecipient[]> {
+async function loadWinners(): Promise<Winner[]> {
+  return winnersFrom(await fetchStandings(createAdminClient()));
+}
+
+async function loadRecipients(audience: Audience, winners: Winner[]): Promise<SurveyInviteRecipient[]> {
   const supabase = createAdminClient();
   const list: SurveyInviteRecipient[] = [];
 
-  if (audience === 'competitor') {
+  if (audience === 'competitor' || audience === 'winner') {
+    // Winners get the winner survey (competitor questions + prizes) instead
+    // of the general competitor survey — never both.
+    const winnerIds = new Set(winners.map((w) => w.registration_id));
     const { data, error } = await supabase
       .from('vsyc_registrations')
-      .select('first_name, email, parent_email, age_on_event');
+      .select('id, first_name, email, parent_email, age_on_event');
     if (error) throw new Error(error.message);
     for (const r of data ?? []) {
+      if ((audience === 'winner') !== winnerIds.has(r.id)) continue;
       list.push({ to: r.email, firstName: r.first_name });
       // Minors: the parent usually has the inbox and the spend answers.
       if (r.age_on_event < 18 && r.parent_email) list.push({ to: r.parent_email, firstName: r.first_name });
@@ -73,22 +88,24 @@ async function lastSentAt(audience: Audience): Promise<string | null> {
 
 /**
  * GET /api/admin/surveys/invites — recipient counts and last-sent time per
- * audience, for the Surveys tab. No emails are sent.
+ * audience, plus the podium list the winner audience is built from, for the
+ * Surveys tab. No emails are sent.
  */
 export const GET = withErrorHandling(async (requestId, req: NextRequest) => {
   const auth = await requireAdminRequest(req, requestId);
   if (auth instanceof NextResponse) return auth;
 
+  const winners = await loadWinners();
   const audiences = await Promise.all(
     (Object.keys(AUDIENCES) as Audience[]).map(async (a) => ({
       audience: a,
-      recipients: (await loadRecipients(a)).length,
+      recipients: (await loadRecipients(a, winners)).length,
       lastSentAt: await lastSentAt(a),
       surveyUrl: `${BASE_URL}/survey/${AUDIENCES[a].survey}?src=email`,
     })),
   );
 
-  return NextResponse.json({ audiences }, { headers: { 'x-request-id': requestId } });
+  return NextResponse.json({ audiences, winners }, { headers: { 'x-request-id': requestId } });
 });
 
 /**
@@ -105,7 +122,7 @@ export const POST = withErrorHandling(async (requestId, req: NextRequest) => {
   const body = await req.json().catch(() => ({}));
   const audience = body?.audience;
   if (!isAudience(audience)) {
-    return apiError('bad_request', 'audience must be competitor, spectator, or volunteer', requestId);
+    return apiError('bad_request', 'audience must be winner, competitor, spectator, or volunteer', requestId);
   }
 
   const previous = await lastSentAt(audience);
@@ -113,11 +130,12 @@ export const POST = withErrorHandling(async (requestId, req: NextRequest) => {
     return apiError('conflict', `Survey invites already went to ${AUDIENCES[audience].label} on ${previous}.`, requestId);
   }
 
-  const recipients = await loadRecipients(audience);
+  const recipients = await loadRecipients(audience, await loadWinners());
   const surveyUrl = `${BASE_URL}/survey/${AUDIENCES[audience].survey}?src=email`;
   const result = await sendSurveyInviteBatch({
-    audienceLabel: AUDIENCES[audience].label,
+    audienceLabel: AUDIENCES[audience].emailLabel,
     surveyUrl,
+    extraLine: AUDIENCES[audience].extraLine,
     recipients,
   });
 

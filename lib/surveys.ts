@@ -7,13 +7,14 @@
  * Every respondent type gets the SAME shared blocks (contest, weekend spend,
  * Goodles, stay in touch) so results can be compared across groups and the
  * economic-impact numbers cover everyone who was there. Only the opening
- * "Your day" block changes per role.
+ * "Your day" block changes per role — plus a Prizes block for winners
+ * (top 3 per division) and sales questions for vendors.
  *
  * Question `key`s are stored as JSON keys in vsyc26_survey_responses.answers.
  * Never rename a key once responses exist — add a new one instead.
  */
 
-export const SURVEY_TYPES = ['competitor', 'spectator', 'volunteer', 'sponsor'] as const;
+export const SURVEY_TYPES = ['competitor', 'winner', 'spectator', 'volunteer', 'vendor', 'sponsor'] as const;
 export type SurveyType = (typeof SURVEY_TYPES)[number];
 
 export function isSurveyType(value: string): value is SurveyType {
@@ -139,36 +140,37 @@ function contestSection(): SurveySection {
   };
 }
 
-function weekendSection(): SurveySection {
+function weekendSection({ includeVendorSpend = true } = {}): SurveySection {
+  const questions: SurveyQuestion[] = [
+    { key: 'travel_time', kind: 'single', label: 'How far did you travel to get here?', options: TRAVEL },
+    { key: 'home_zip', kind: 'short', label: 'Home zip code', hint: 'Optional. Only used to map where people came from.', placeholder: '22201', maxLength: 10 },
+    { key: 'group_size', kind: 'single', label: 'Including you, how many people were in your group?', options: GROUP_SIZE },
+    { key: 'hotel_nights', kind: 'single', label: 'How many nights did you stay at a local hotel?', options: HOTEL_NIGHTS },
+    { key: 'hotel_group_rate', kind: 'single', label: 'VA States had a hotel group rate. Did you know?', options: GROUP_RATE },
+    {
+      key: 'weekend_spend', kind: 'single',
+      label: 'About how much did your group spend this weekend?',
+      hint: 'Gas, hotel, food, shopping. Leave out entry fees.',
+      options: WEEKEND_SPEND, dollarMidpoints: WEEKEND_SPEND_MID,
+    },
+    {
+      key: 'dulles_spend', kind: 'single',
+      label: 'How much of that went to Dulles Town Center stores and restaurants?',
+      options: DULLES_SPEND, dollarMidpoints: DULLES_SPEND_MID,
+    },
+    { key: 'vendor_spend', kind: 'single', label: 'How much did you spend at yo-yo vendor tables?', options: VENDOR_SPEND, dollarMidpoints: DULLES_SPEND_MID },
+    { key: 'amenities_used', kind: 'multi', label: 'Which amenities did you use?', hint: 'Tap all that apply', options: AMENITIES },
+    {
+      key: 'after_party', kind: 'single',
+      label: 'Did you go to the after-party? About how much did you spend?',
+      options: AFTER_PARTY, dollarMidpoints: AFTER_PARTY_MID,
+    },
+  ];
   return {
     id: 'weekend',
     title: 'Your Weekend',
     blurb: 'Rough guesses are fine. This shows venues and partners the real impact of the contest.',
-    questions: [
-      { key: 'travel_time', kind: 'single', label: 'How far did you travel to get here?', options: TRAVEL },
-      { key: 'home_zip', kind: 'short', label: 'Home zip code', hint: 'Optional. Only used to map where people came from.', placeholder: '22201', maxLength: 10 },
-      { key: 'group_size', kind: 'single', label: 'Including you, how many people were in your group?', options: GROUP_SIZE },
-      { key: 'hotel_nights', kind: 'single', label: 'How many nights did you stay at a local hotel?', options: HOTEL_NIGHTS },
-      { key: 'hotel_group_rate', kind: 'single', label: 'VA States had a hotel group rate. Did you know?', options: GROUP_RATE },
-      {
-        key: 'weekend_spend', kind: 'single',
-        label: 'About how much did your group spend this weekend?',
-        hint: 'Gas, hotel, food, shopping. Leave out entry fees.',
-        options: WEEKEND_SPEND, dollarMidpoints: WEEKEND_SPEND_MID,
-      },
-      {
-        key: 'dulles_spend', kind: 'single',
-        label: 'How much of that went to Dulles Town Center stores and restaurants?',
-        options: DULLES_SPEND, dollarMidpoints: DULLES_SPEND_MID,
-      },
-      { key: 'vendor_spend', kind: 'single', label: 'How much did you spend at yo-yo vendor tables?', options: VENDOR_SPEND, dollarMidpoints: DULLES_SPEND_MID },
-      { key: 'amenities_used', kind: 'multi', label: 'Which amenities did you use?', hint: 'Tap all that apply', options: AMENITIES },
-      {
-        key: 'after_party', kind: 'single',
-        label: 'Did you go to the after-party? About how much did you spend?',
-        options: AFTER_PARTY, dollarMidpoints: AFTER_PARTY_MID,
-      },
-    ],
+    questions: includeVendorSpend ? questions : questions.filter((q) => q.key !== 'vendor_spend'),
   };
 }
 
@@ -265,10 +267,62 @@ const sponsorDay: SurveySection = {
   questions: [
     { key: 'sponsor_org', kind: 'short', label: 'Brand / organization', required: true, maxLength: 120 },
     { key: 'visibility_rating', kind: 'scale5', label: 'Did your brand get the visibility you expected?', hint: 'Signage, MC shoutouts, table, social', scaleLabels: RATING_LABELS },
-    { key: 'engagement', kind: 'text', label: 'What engagement did you see?', hint: 'Samples handed out, leads, sales. Numbers help.', maxLength: 1000 },
+    { key: 'engagement', kind: 'text', label: 'What impact did you see?', hint: 'Samples handed out, sign-ups, new followers, leads. Numbers help.', maxLength: 1000 },
+    { key: 'audience_fit', kind: 'scale5', label: 'How well did the VSYC crowd fit your brand\u2019s audience?', scaleLabels: ['1 · Poor fit', '5 · Perfect fit'] },
     { key: 'value_rating', kind: 'scale5', label: 'Was it worth it at your tier?', scaleLabels: RATING_LABELS },
     { key: 'sponsor_next_year', kind: 'single', label: 'Would you sponsor VSYC-27?', options: ['Yes, same tier', 'Yes, different tier', 'Maybe', 'No'] },
     { key: 'clearer_yes', kind: 'text', label: 'What would make next year an easy yes?', maxLength: 1000 },
+  ],
+};
+
+const PRIZE_RATING_LABELS: [string, string] = ['1 · Meh', '5 · Loved it'];
+
+/** Only sent to the top 3 in each division (see lib/standings.ts). */
+const winnerPrizes: SurveySection = {
+  id: 'prizes',
+  title: 'Your Prizes',
+  blurb: 'You placed. Congrats. Tell us what you thought of what you took home.',
+  questions: [
+    { key: 'placement_division', kind: 'single', label: 'Which division did you place in?', options: ['1A', 'X Division', 'Sport / Beginner / Junior'], required: true },
+    { key: 'placement', kind: 'single', label: 'Where did you place?', options: ['1st', '2nd', '3rd'], required: true },
+    { key: 'prize_overall_rating', kind: 'scale5', label: 'How was your prize package overall?', scaleLabels: PRIZE_RATING_LABELS },
+    { key: 'miniso_basket_rating', kind: 'scale5', label: 'Rate the Miniso basket', scaleLabels: PRIZE_RATING_LABELS },
+    { key: 'miniso_favorite', kind: 'short', label: 'Favorite thing in the Miniso basket?', maxLength: 200 },
+    { key: 'miniso_brand_view', kind: 'single', label: 'Would you shop at Miniso after this?', options: ['Already a fan', 'Yes, more likely now', 'Maybe', 'No'] },
+    { key: 'goodles_prize_rating', kind: 'scale5', label: 'Rate the Goodles additions', scaleLabels: PRIZE_RATING_LABELS },
+    { key: 'goodles_prize_tried', kind: 'single', label: 'Have you tried the Goodles from your prize yet?', options: ['Yes, loved it', 'Yes, it was OK', 'Not yet', 'Gave it away / shared it'] },
+    { key: 'prize_vs_other_contests', kind: 'single', label: 'How did the prizes compare to other contests you\u2019ve placed at?', options: ['Better', 'About the same', 'Not as good', 'First time placing'] },
+    { key: 'prize_posted', kind: 'single', label: 'Did you post your prizes?', hint: 'Tagging Miniso and Goodles helps us keep them as sponsors', options: ['Yes, tagged the sponsors', 'Yes, no tags', 'Planning to', 'No'] },
+    {
+      key: 'prize_wishlist', kind: 'multi', label: 'What prizes would you most want next year?', hint: 'Tap all that apply',
+      options: ['Yo-yos / gear', 'Cash', 'Trophy / medal', 'Sponsor product baskets', 'Gift cards', 'Free entry next year'],
+    },
+    { key: 'prize_feedback', kind: 'text', label: 'Anything else about the prizes?', maxLength: 1000 },
+  ],
+};
+
+const SALES = ['Under $100', '$100–250', '$250–500', '$500–1,000', '$1,000–2,500', '$2,500+'] as const;
+const SALES_MID: Record<string, number> = {
+  'Under $100': 50, '$100–250': 175, '$250–500': 375, '$500–1,000': 750, '$1,000–2,500': 1750, '$2,500+': 3000,
+};
+
+const vendorDay: SurveySection = {
+  id: 'day',
+  title: 'Your Table',
+  blurb: 'Your numbers stay private. We only share totals across all vendors.',
+  questions: [
+    { key: 'vendor_name', kind: 'single', label: 'Which vendor are you?', options: ['Freshly Dirty', 'Jake Bullock', 'Slow n Steady', 'Other'], required: true },
+    { key: 'vendor_name_other', kind: 'short', label: 'Vendor name', maxLength: 120, showIf: { key: 'vendor_name', anyOf: ['Other'] } },
+    { key: 'vendor_sales', kind: 'single', label: 'About how much did you sell (gross)?', options: SALES, dollarMidpoints: SALES_MID, required: true },
+    { key: 'vendor_transactions', kind: 'single', label: 'About how many sales / customers?', options: ['1–10', '11–25', '26–50', '51–100', '100+'] },
+    { key: 'vendor_vs_expectations', kind: 'single', label: 'How did sales compare to what you expected?', options: ['Beat expectations', 'About what we expected', 'Below expectations'] },
+    { key: 'vendor_vs_other_contests', kind: 'single', label: 'How did VSYC-26 compare to other contests you\u2019ve vended?', options: ['Better', 'About the same', 'Worse', 'First contest we\u2019ve vended'] },
+    { key: 'vendor_top_sellers', kind: 'short', label: 'What sold best?', maxLength: 300 },
+    { key: 'vendor_buyers', kind: 'multi', label: 'Who bought from you?', hint: 'Tap all that apply', options: ['Competitors', 'Spectators / families', 'Mall shoppers passing by', 'Other vendors / staff'] },
+    { key: 'vendor_location_rating', kind: 'scale5', label: 'Table location and foot traffic', scaleLabels: RATING_LABELS },
+    { key: 'vendor_logistics_rating', kind: 'scale5', label: 'Load-in, setup, and communication from us', scaleLabels: RATING_LABELS },
+    { key: 'vendor_next_year', kind: 'single', label: 'Would you vend at VSYC-27?', options: ['Yes', 'Maybe', 'No'] },
+    { key: 'vendor_improve', kind: 'text', label: 'What would make vending better next year?', hint: 'Table size, placement, power, MC shoutouts, pricing', maxLength: 1000 },
   ],
 };
 
@@ -281,6 +335,13 @@ export const SURVEYS: Record<SurveyType, SurveyDef> = {
     title: 'You’re the reason this contest exists.',
     intro: 'Win, lose, or somewhere in between, tell us how it felt to compete. About 4 minutes. Your answers shape VSYC-27.',
     sections: [competitorDay, contestSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
+  },
+  winner: {
+    type: 'winner',
+    eyebrow: 'Winner Feedback',
+    title: 'You made the podium. Tell us how it went.',
+    intro: 'Same survey as every competitor, plus a few questions about your prizes. About 5 minutes. Your answers shape VSYC-27 and help us keep great prize sponsors.',
+    sections: [competitorDay, winnerPrizes, contestSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
   },
   spectator: {
     type: 'spectator',
@@ -295,6 +356,13 @@ export const SURVEYS: Record<SurveyType, SurveyDef> = {
     title: 'You made September 19th work.',
     intro: 'Tell us what it was really like behind the scenes. About 4 minutes.',
     sections: [volunteerDay, contestSection(), weekendSection(), goodlesSection(), stayInTouchSection()],
+  },
+  vendor: {
+    type: 'vendor',
+    eyebrow: 'Vendor Feedback',
+    title: 'Thanks for setting up shop at VSYC-26.',
+    intro: 'Tell us how sales went and what would make vending better. About 4 minutes. Your numbers stay private.',
+    sections: [vendorDay, contestSection(), weekendSection({ includeVendorSpend: false }), goodlesSection(true), stayInTouchSection()],
   },
   sponsor: {
     type: 'sponsor',

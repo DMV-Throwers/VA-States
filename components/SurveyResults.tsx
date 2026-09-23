@@ -16,20 +16,31 @@ interface SurveyRow {
 }
 
 interface InviteAudience {
-  audience: 'competitor' | 'spectator' | 'volunteer';
+  audience: 'winner' | 'competitor' | 'spectator' | 'volunteer';
   recipients: number;
   lastSentAt: string | null;
   surveyUrl: string;
+}
+
+interface WinnerRow {
+  registration_id: string;
+  display_name: string;
+  division: '1A' | 'X' | 'SBJ';
+  place: number;
 }
 
 type TypeFilter = 'all' | SurveyType;
 
 const TYPE_LABELS: Record<SurveyType, string> = {
   competitor: 'Competitors',
+  winner: 'Winners',
   spectator: 'Spectators',
   volunteer: 'Volunteers',
+  vendor: 'Vendors',
   sponsor: 'Sponsors',
 };
+
+const PLACE_LABELS = ['', '1st', '2nd', '3rd'];
 
 const HOTEL_NIGHTS: Record<string, number> = { '0 · Day trip': 0, '1 night': 1, '2 nights': 2, '3+ nights': 3 };
 
@@ -69,6 +80,7 @@ function csvCell(v: unknown): string {
 export default function SurveyResults({ token }: { token: string }) {
   const [rows, setRows] = useState<SurveyRow[]>([]);
   const [invites, setInvites] = useState<InviteAudience[]>([]);
+  const [winners, setWinners] = useState<WinnerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [sending, setSending] = useState<string | null>(null);
@@ -84,7 +96,11 @@ export default function SurveyResults({ token }: { token: string }) {
         fetch('/api/admin/surveys/invites', { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       if (resRows.ok) setRows(((await resRows.json()) as { responses: SurveyRow[] }).responses);
-      if (resInv.ok) setInvites(((await resInv.json()) as { audiences: InviteAudience[] }).audiences);
+      if (resInv.ok) {
+        const inv = (await resInv.json()) as { audiences: InviteAudience[]; winners: WinnerRow[] };
+        setInvites(inv.audiences);
+        setWinners(inv.winners ?? []);
+      }
       if (!resRows.ok) setStatusMsg('Could not load survey responses.');
     } catch {
       setStatusMsg('Network error loading surveys.');
@@ -147,6 +163,8 @@ export default function SurveyResults({ token }: { token: string }) {
     const intent = str('goodles_purchase_intent');
     const moreLikely = intent.filter((v) => v === 'Much more likely' || v === 'A bit more likely').length;
     const hotelNights = str('hotel_nights').reduce((s, v) => s + (HOTEL_NIGHTS[v] ?? 0), 0);
+    const prizePosted = str('prize_posted');
+    const vendorNext = str('vendor_next_year');
 
     return {
       overall: avg(num('overall_rating')),
@@ -164,6 +182,17 @@ export default function SurveyResults({ token }: { token: string }) {
       moreLikely,
       intentN: intent.length,
       boothRating: avg(num('goodles_booth_rating')),
+      hasPrizes: str('placement').length > 0,
+      prizeOverall: avg(num('prize_overall_rating')),
+      miniso: avg(num('miniso_basket_rating')),
+      goodlesPrize: avg(num('goodles_prize_rating')),
+      prizeTagged: prizePosted.filter((v) => v === 'Yes, tagged the sponsors').length,
+      prizePostedN: prizePosted.length,
+      vendorN: str('vendor_sales').length,
+      vendorSales: midSum('vendor_sales'),
+      vendorLocation: avg(num('vendor_location_rating')),
+      vendorReturn: vendorNext.filter((v) => v === 'Yes').length,
+      vendorNextN: vendorNext.length,
     };
   }, [filtered, questions]);
 
@@ -238,7 +267,8 @@ export default function SurveyResults({ token }: { token: string }) {
           </ul>
           <p className="text-xs text-text-muted mt-3">
             The spectator link is the public live link for walk-ups who never RSVP&apos;d. Post it or put it on a QR code
-            (swap <code>src=live</code> for <code>src=qr</code> to track QR scans separately). Sponsors get the link directly.
+            (swap <code>src=live</code> for <code>src=qr</code> to track QR scans separately). Send vendors and sponsors
+            their links directly. Vendors who also sponsored (Freshly Dirty) take the vendor survey. The winner link is only for podium finishers.
           </p>
         </div>
 
@@ -267,7 +297,23 @@ export default function SurveyResults({ token }: { token: string }) {
             ))}
             {!invites.length && !loading && <li className="text-xs text-text-muted">Invite list unavailable.</li>}
           </ul>
-          <p className="text-xs text-text-muted mt-3">Competitors: registrant + parent email for minors. Volunteers: confirmed only. Spectators: everyone who RSVP&apos;d. Duplicate addresses get one email.</p>
+          <p className="text-xs text-text-muted mt-3">
+            Winners: top 3 per division from final results, sent the winner survey (competitor questions + prizes) instead of the
+            competitor one. Competitors and winners also go to the parent email for minors. Volunteers: confirmed only.
+            Spectators: everyone who RSVP&apos;d. Duplicate addresses get one email.
+          </p>
+          {winners.length > 0 && (
+            <details className="mt-3 border-t border-navy-border pt-3">
+              <summary className="cursor-pointer text-xs font-black tracking-caps text-gold">WINNER LIST · {winners.length}</summary>
+              <ul className="mt-2 space-y-1 text-xs text-text-body">
+                {winners.map((w) => (
+                  <li key={`${w.division}-${w.registration_id}`}>
+                    <span className="text-text-muted">{w.division} · {PLACE_LABELS[w.place] ?? w.place}</span> · {w.display_name}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
       </section>
 
@@ -308,7 +354,7 @@ export default function SurveyResults({ token }: { token: string }) {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Stat label="Weekend spend" value={money(kpis.weekendSpend)} />
               <Stat label="At Dulles Town Center" value={money(kpis.dullesSpend)} />
-              <Stat label="At vendor tables" value={money(kpis.vendorSpend)} />
+              <Stat label="At vendor tables" value={money(kpis.vendorSpend)} note="Attendee-reported" />
               <Stat label="At after-party" value={money(kpis.afterPartySpend)} />
             </div>
             <p className="text-xs text-text-muted mt-2">
@@ -325,6 +371,31 @@ export default function SurveyResults({ token }: { token: string }) {
               <Stat label="More likely to buy" value={pct(kpis.moreLikely, kpis.intentN)} note={`${kpis.moreLikely} of ${kpis.intentN}`} />
             </div>
           </section>
+
+          {kpis.hasPrizes && (
+            <section>
+              <h3 className="text-xs font-black tracking-caps text-gold mb-3">PRIZES (WINNERS)</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Stat label="Prize package" value={kpis.prizeOverall ? `${kpis.prizeOverall.toFixed(1)} / 5` : '—'} />
+                <Stat label="Miniso basket" value={kpis.miniso ? `${kpis.miniso.toFixed(1)} / 5` : '—'} />
+                <Stat label="Goodles additions" value={kpis.goodlesPrize ? `${kpis.goodlesPrize.toFixed(1)} / 5` : '—'} />
+                <Stat label="Posted + tagged sponsors" value={pct(kpis.prizeTagged, kpis.prizePostedN)} note={`${kpis.prizeTagged} of ${kpis.prizePostedN}`} />
+              </div>
+            </section>
+          )}
+
+          {kpis.vendorN > 0 && (
+            <section>
+              <h3 className="text-xs font-black tracking-caps text-gold mb-3">VENDORS</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Stat label="Vendors responded" value={String(kpis.vendorN)} />
+                <Stat label="Vendor sales" value={money(kpis.vendorSales)} note="Vendor-reported, bucket midpoints" />
+                <Stat label="Location / traffic" value={kpis.vendorLocation ? `${kpis.vendorLocation.toFixed(1)} / 5` : '—'} />
+                <Stat label="Would vend again" value={pct(kpis.vendorReturn, kpis.vendorNextN)} note={`${kpis.vendorReturn} of ${kpis.vendorNextN} said yes`} />
+              </div>
+              <p className="text-xs text-text-muted mt-2">Vendors were told their numbers stay private. Share totals only, never one vendor&apos;s sales.</p>
+            </section>
+          )}
 
           {/* Per-question breakdown */}
           <section className="space-y-6">
