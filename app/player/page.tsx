@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { DIVISION_PLAYLIST_URLS } from '@/lib/contest-videos';
+import type { Division } from '@/lib/standings';
 
 type AuthMode = 'login' | 'signup';
 
@@ -395,6 +397,21 @@ export default function PlayerPortalPage() {
               </div>
               <div className="mt-4 text-sm text-text-body">
                 <p>Divisions: <span className="text-white">{profile.divisions.join(', ')}</span></p>
+                {profile.divisions.some((d) => d in DIVISION_PLAYLIST_URLS) && (
+                  <p>
+                    Contest videos:{' '}
+                    {profile.divisions
+                      .filter((d): d is Division => d in DIVISION_PLAYLIST_URLS)
+                      .map((d, i) => (
+                        <span key={d}>
+                          {i > 0 && ' · '}
+                          <a href={DIVISION_PLAYLIST_URLS[d]} target="_blank" rel="noopener noreferrer" className="text-gold-light underline">
+                            {d} runs →
+                          </a>
+                        </span>
+                      ))}
+                  </p>
+                )}
                 <p>Payment: <span className="text-white">{profile.paid || profile.fee_cents === 0 ? 'Complete' : 'Pending'}</span></p>
                 <p>Music deadline: <span className="text-white">{deadlineLabel}</span></p>
                 {profile.music_uploaded_at && (

@@ -3,6 +3,7 @@ import { getEventFlagBoolean } from '@/lib/event-flags';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { DIVISIONS, fetchStandings, type Division, type Standing } from '@/lib/standings';
+import { DIVISION_PLAYLIST_URLS, LIVESTREAM_URL, WINNERS_PLAYLIST_URL } from '@/lib/contest-videos';
 
 // Public results are gated with an admin-toggleable flag and env fallback.
 
@@ -43,6 +44,11 @@ export default async function ResultsPage() {
           <p style={{ color: 'var(--text-body)', margin: '0.5rem 0 0' }}>
             <a href="/results/run-order" style={{ color: 'var(--gold-light)' }}>See who&rsquo;s up next in the live run order →</a>
           </p>
+          <p style={{ color: 'var(--text-body)', margin: '0.5rem 0 0' }}>
+            <a href={WINNERS_PLAYLIST_URL} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold-light)' }}>Watch the winners playlist →</a>
+            {' · '}
+            <a href={LIVESTREAM_URL} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold-light)' }}>Full livestream replay →</a>
+          </p>
         </header>
 
         {!resultsPublished || !standings ? (
@@ -61,13 +67,21 @@ export default async function ResultsPage() {
             const comps = standings[code];
             return (
               <section key={code} style={{ marginBottom: '2.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1rem' }}>
                   <h2 style={{ fontFamily: "'Playfair Display', serif", color: 'var(--gold)', fontSize: '1.2rem', margin: 0 }}>
                     {label}
                   </h2>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                     {comps.length} placed
                   </span>
+                  <a
+                    href={DIVISION_PLAYLIST_URLS[code]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 700, color: 'var(--gold-light)' }}
+                  >
+                    Watch the runs →
+                  </a>
                 </div>
 
                 {comps.length === 0 ? (
