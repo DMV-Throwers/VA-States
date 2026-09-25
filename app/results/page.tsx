@@ -1,8 +1,10 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getEventFlagBoolean } from '@/lib/event-flags';
 import { getSocialLinks, type Socials } from '@/lib/social-links';
+import Image from 'next/image';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
+import { PHOTO_ALBUM_QR_URL, PHOTO_ALBUM_URL } from '@/lib/contest-photos';
 
 // Public results are gated with an admin-toggleable flag and env fallback.
 
@@ -125,6 +127,22 @@ export default async function ResultsPage() {
             <a href="https://dmvthrowers.club/vsyc26-results.html" style={{ color: 'var(--gold-light)', fontSize: '0.85rem' }}>Full stats &amp; recap →</a>
             <a href="https://www.youtube.com/live/yVLew1sJqNA" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold-light)', fontSize: '0.85rem' }}>Watch the livestream →</a>
             <a href="https://compete.yoyocontest.com/results/2026-virginia-state-yo-yo-contest" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold-light)', fontSize: '0.85rem' }}>Official NYYL results →</a>
+            <a href={PHOTO_ALBUM_URL} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold-light)', fontSize: '0.85rem' }}>Browse the contest photos →</a>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', marginTop: '1.25rem' }}>
+            <a href={PHOTO_ALBUM_URL} target="_blank" rel="noopener noreferrer" style={{ display: 'block', flexShrink: 0 }}>
+              <Image
+                src={PHOTO_ALBUM_QR_URL}
+                alt="QR code for the VSYC-26 contest photo album on Google Photos"
+                width={140}
+                height={140}
+                unoptimized
+                style={{ display: 'block' }}
+              />
+            </a>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: 0, maxWidth: 320 }}>
+              Scan to open the contest photo album on your phone. Every photo is free to view, no sign-in needed.
+            </p>
           </div>
         </header>
 
