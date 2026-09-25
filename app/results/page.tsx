@@ -4,6 +4,7 @@ import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { DIVISIONS, fetchStandings, type Division, type Standing } from '@/lib/standings';
 import { DIVISION_PLAYLIST_URLS, LIVESTREAM_URL, WINNERS_PLAYLIST_URL } from '@/lib/contest-videos';
+import { PHOTO_ALBUM_URL } from '@/lib/contest-photos';
 
 // Public results are gated with an admin-toggleable flag and env fallback.
 
@@ -48,6 +49,9 @@ export default async function ResultsPage() {
             <a href={WINNERS_PLAYLIST_URL} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold-light)' }}>Watch the winners playlist →</a>
             {' · '}
             <a href={LIVESTREAM_URL} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold-light)' }}>Full livestream replay →</a>
+          </p>
+          <p style={{ color: 'var(--text-body)', margin: '0.5rem 0 0' }}>
+            <a href={PHOTO_ALBUM_URL} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold-light)' }}>Browse the contest photos →</a>
           </p>
         </header>
 
