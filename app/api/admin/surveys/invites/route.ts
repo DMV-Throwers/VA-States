@@ -11,6 +11,7 @@ export const maxDuration = 60;
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://register.dmvthrowers.club';
 const AUDIT_ACTION = 'survey_invites_sent';
+const REMINDER_ACTION = 'survey_reminders_sent';
 /** Where "Send test" goes. Override with SURVEY_TEST_EMAIL. */
 const TEST_EMAIL = process.env.SURVEY_TEST_EMAIL || 'dmvthrowers@gmail.com';
 
@@ -76,16 +77,31 @@ async function loadRecipients(audience: Audience, winners: Winner[]): Promise<Su
   });
 }
 
-async function lastSentAt(audience: Audience): Promise<string | null> {
+async function lastSentAt(audience: Audience, action = AUDIT_ACTION): Promise<string | null> {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from('vsyc_audit_log')
     .select('created_at')
-    .eq('action', AUDIT_ACTION)
+    .eq('action', action)
     .eq('details->>audience', audience)
     .order('created_at', { ascending: false })
     .limit(1);
   return data?.[0]?.created_at ?? null;
+}
+
+/**
+ * Emails of people who already answered any survey. Only respondents who left a
+ * contact email show up here — the rest are anonymous, which is why the
+ * reminder copy tells anyone who already answered to ignore it.
+ */
+async function respondedEmails(): Promise<Set<string>> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('vsyc26_survey_responses')
+    .select('contact_email')
+    .not('contact_email', 'is', null);
+  if (error) throw new Error(error.message);
+  return new Set((data ?? []).map((r) => String(r.contact_email).trim().toLowerCase()).filter(Boolean));
 }
 
 /**
@@ -98,13 +114,20 @@ export const GET = withErrorHandling(async (requestId, req: NextRequest) => {
   if (auth instanceof NextResponse) return auth;
 
   const winners = await loadWinners();
+  const responded = await respondedEmails();
   const audiences = await Promise.all(
-    (Object.keys(AUDIENCES) as Audience[]).map(async (a) => ({
-      audience: a,
-      recipients: (await loadRecipients(a, winners)).length,
-      lastSentAt: await lastSentAt(a),
-      surveyUrl: `${BASE_URL}/survey/${AUDIENCES[a].survey}?src=email`,
-    })),
+    (Object.keys(AUDIENCES) as Audience[]).map(async (a) => {
+      const recipients = await loadRecipients(a, winners);
+      return {
+        audience: a,
+        recipients: recipients.length,
+        // Recipients a reminder would skip because they answered with this email.
+        responded: recipients.filter((r) => responded.has(r.to.trim().toLowerCase())).length,
+        lastSentAt: await lastSentAt(a),
+        lastReminderAt: await lastSentAt(a, REMINDER_ACTION),
+        surveyUrl: `${BASE_URL}/survey/${AUDIENCES[a].survey}?src=email`,
+      };
+    }),
   );
 
   return NextResponse.json({ audiences, winners }, { headers: { 'x-request-id': requestId } });
@@ -113,9 +136,11 @@ export const GET = withErrorHandling(async (requestId, req: NextRequest) => {
 /**
  * POST /api/admin/surveys/invites
  *
- * Emails the survey link to one audience. Body: { audience, force?, test? }.
+ * Emails the survey link to one audience. Body: { audience, force?, test?, reminder? }.
  * test: true sends only that audience's email to TEST_EMAIL, marked [TEST].
- * Refuses (409) if that audience was already sent to, unless force is true,
+ * reminder: true sends the "still time" follow-up instead, skipping anyone who
+ * already answered with their email; it needs the invite to have gone out first.
+ * Refuses (409) if that audience already got this email, unless force is true,
  * so a double-click never emails everyone twice.
  */
 export const POST = withErrorHandling(async (requestId, req: NextRequest) => {
@@ -127,6 +152,7 @@ export const POST = withErrorHandling(async (requestId, req: NextRequest) => {
   if (!isAudience(audience)) {
     return apiError('bad_request', 'audience must be winner, competitor, spectator, or volunteer', requestId);
   }
+  const reminder = body?.reminder === true;
 
   // Test send: the exact email this audience would get, to the organizer only.
   // Logged separately so it never counts as the real send (or blocks it).
@@ -137,32 +163,49 @@ export const POST = withErrorHandling(async (requestId, req: NextRequest) => {
       extraLine: AUDIENCES[audience].extraLine,
       recipients: [{ to: TEST_EMAIL, firstName: 'Test' }],
       isTest: true,
+      reminder,
     });
     await logAudit('survey_invite_test_sent', {
       actor: auth.email ?? 'admin',
-      details: { audience, to: TEST_EMAIL, ok: result.sent === 1 },
+      details: { audience, to: TEST_EMAIL, ok: result.sent === 1, reminder },
     });
     if (result.sent !== 1) {
       return apiError('upstream_error', `Test email failed: ${result.failed[0]?.error ?? 'unknown error'}`, requestId);
     }
-    return NextResponse.json({ ok: true, test: true, audience, to: TEST_EMAIL }, { headers: { 'x-request-id': requestId } });
+    return NextResponse.json({ ok: true, test: true, audience, to: TEST_EMAIL, reminder }, { headers: { 'x-request-id': requestId } });
   }
 
-  const previous = await lastSentAt(audience);
+  const action = reminder ? REMINDER_ACTION : AUDIT_ACTION;
+  if (reminder && !(await lastSentAt(audience))) {
+    return apiError('conflict', `Send the invite to ${AUDIENCES[audience].label} before a reminder.`, requestId);
+  }
+  const previous = await lastSentAt(audience, action);
   if (previous && body?.force !== true) {
-    return apiError('conflict', `Survey invites already went to ${AUDIENCES[audience].label} on ${previous}.`, requestId);
+    return apiError(
+      'conflict',
+      `Survey ${reminder ? 'reminders' : 'invites'} already went to ${AUDIENCES[audience].label} on ${previous}.`,
+      requestId,
+    );
   }
 
-  const recipients = await loadRecipients(audience, await loadWinners());
+  let recipients = await loadRecipients(audience, await loadWinners());
+  let skipped = 0;
+  if (reminder) {
+    const responded = await respondedEmails();
+    const before = recipients.length;
+    recipients = recipients.filter((r) => !responded.has(r.to.trim().toLowerCase()));
+    skipped = before - recipients.length;
+  }
   const surveyUrl = `${BASE_URL}/survey/${AUDIENCES[audience].survey}?src=email`;
   const result = await sendSurveyInviteBatch({
     audienceLabel: AUDIENCES[audience].emailLabel,
     surveyUrl,
     extraLine: AUDIENCES[audience].extraLine,
     recipients,
+    reminder,
   });
 
-  await logAudit(AUDIT_ACTION, {
+  await logAudit(action, {
     actor: auth.email ?? 'admin',
     details: {
       audience,
@@ -171,11 +214,12 @@ export const POST = withErrorHandling(async (requestId, req: NextRequest) => {
       failed: result.failed.length,
       failed_emails: result.failed.map((f) => f.email),
       resend: Boolean(previous),
+      ...(reminder ? { skipped_responded: skipped } : {}),
     },
   });
 
   return NextResponse.json(
-    { ok: true, audience, total: recipients.length, sent: result.sent, failed: result.failed },
+    { ok: true, audience, reminder, total: recipients.length, skipped, sent: result.sent, failed: result.failed },
     { headers: { 'x-request-id': requestId } },
   );
 });
