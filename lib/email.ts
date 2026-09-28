@@ -506,6 +506,8 @@ function buildVolunteerConfirmedText(p: VolunteerConfirmedParams): string {
 export interface SurveyInviteRecipient {
   to: string;
   firstName: string;
+  /** Colleagues copied on the same email (sponsor and vendor contacts). */
+  cc?: string[];
 }
 
 interface SurveyInviteBatchParams {
@@ -545,6 +547,7 @@ export async function sendSurveyInviteBatch(p: SurveyInviteBatchParams): Promise
         chunk.map((r) => ({
           from: FROM,
           to: r.to,
+          ...(r.cc?.length ? { cc: r.cc } : {}),
           replyTo: REPLY_TO,
           subject: `${p.isTest ? '[TEST] ' : ''}${p.reminder
             ? 'Still time: tell us what you thought of VSYC-26'

@@ -15,7 +15,14 @@ const REMINDER_ACTION = 'survey_reminders_sent';
 /** Where "Send test" goes. Override with SURVEY_TEST_EMAIL. */
 const TEST_EMAIL = process.env.SURVEY_TEST_EMAIL || 'dmvthrowers@gmail.com';
 
-const AUDIENCES: Record<string, { label: string; emailLabel: string; survey: string; extraLine?: string }> = {
+const AUDIENCES: Record<string, {
+  label: string;
+  emailLabel: string;
+  survey: string;
+  extraLine?: string;
+  /** The first invite went out by hand, outside this tool: counts as sent. */
+  invitedManuallyAt?: string;
+}> = {
   winner: {
     label: 'podium finishers',
     emailLabel: 'competitors',
@@ -25,8 +32,12 @@ const AUDIENCES: Record<string, { label: string; emailLabel: string; survey: str
   competitor: { label: 'competitors', emailLabel: 'competitors', survey: 'competitor' },
   spectator: { label: 'spectators', emailLabel: 'spectators', survey: 'spectator' },
   volunteer: { label: 'volunteers', emailLabel: 'volunteers', survey: 'volunteer' },
+  // Sponsors and vendors come from vsyc26_survey_contacts. Their personal
+  // invites went out from the contest Gmail on Sept 24, 2026.
+  sponsor: { label: 'sponsors', emailLabel: 'sponsors', survey: 'sponsor', invitedManuallyAt: '2026-09-24T00:13:00Z' },
+  vendor: { label: 'vendors', emailLabel: 'vendors', survey: 'vendor', invitedManuallyAt: '2026-09-24T00:12:00Z' },
 };
-type Audience = 'winner' | 'competitor' | 'spectator' | 'volunteer';
+type Audience = 'winner' | 'competitor' | 'spectator' | 'volunteer' | 'sponsor' | 'vendor';
 
 function isAudience(v: unknown): v is Audience {
   return typeof v === 'string' && Object.hasOwn(AUDIENCES, v);
@@ -54,6 +65,13 @@ async function loadRecipients(audience: Audience, winners: Winner[]): Promise<Su
       // Minors: the parent usually has the inbox and the spend answers.
       if (r.age_on_event < 18 && r.parent_email) list.push({ to: r.parent_email, firstName: r.first_name });
     }
+  } else if (audience === 'sponsor' || audience === 'vendor') {
+    const { data, error } = await supabase
+      .from('vsyc26_survey_contacts')
+      .select('first_name, email, cc')
+      .eq('audience', audience);
+    if (error) throw new Error(error.message);
+    for (const r of data ?? []) list.push({ to: r.email, firstName: r.first_name, cc: r.cc ?? [] });
   } else if (audience === 'spectator') {
     const { data, error } = await supabase.from('vsyc_spectators').select('first_name, email');
     if (error) throw new Error(error.message);
@@ -86,7 +104,9 @@ async function lastSentAt(audience: Audience, action = AUDIT_ACTION): Promise<st
     .eq('details->>audience', audience)
     .order('created_at', { ascending: false })
     .limit(1);
-  return data?.[0]?.created_at ?? null;
+  const logged = data?.[0]?.created_at ?? null;
+  if (action === AUDIT_ACTION) return logged ?? AUDIENCES[audience].invitedManuallyAt ?? null;
+  return logged;
 }
 
 /**
@@ -102,6 +122,11 @@ async function respondedEmails(): Promise<Set<string>> {
     .not('contact_email', 'is', null);
   if (error) throw new Error(error.message);
   return new Set((data ?? []).map((r) => String(r.contact_email).trim().toLowerCase()).filter(Boolean));
+}
+
+/** A sponsor or vendor counts as answered if they or anyone copied on their email did. */
+function hasResponded(r: SurveyInviteRecipient, responded: Set<string>): boolean {
+  return [r.to, ...(r.cc ?? [])].some((e) => responded.has(e.trim().toLowerCase()));
 }
 
 /**
@@ -122,7 +147,7 @@ export const GET = withErrorHandling(async (requestId, req: NextRequest) => {
         audience: a,
         recipients: recipients.length,
         // Recipients a reminder would skip because they answered with this email.
-        responded: recipients.filter((r) => responded.has(r.to.trim().toLowerCase())).length,
+        responded: recipients.filter((r) => hasResponded(r, responded)).length,
         lastSentAt: await lastSentAt(a),
         lastReminderAt: await lastSentAt(a, REMINDER_ACTION),
         surveyUrl: `${BASE_URL}/survey/${AUDIENCES[a].survey}?src=email`,
@@ -150,7 +175,7 @@ export const POST = withErrorHandling(async (requestId, req: NextRequest) => {
   const body = await req.json().catch(() => ({}));
   const audience = body?.audience;
   if (!isAudience(audience)) {
-    return apiError('bad_request', 'audience must be winner, competitor, spectator, or volunteer', requestId);
+    return apiError('bad_request', 'audience must be winner, competitor, spectator, volunteer, sponsor, or vendor', requestId);
   }
   const reminder = body?.reminder === true;
 
@@ -193,7 +218,7 @@ export const POST = withErrorHandling(async (requestId, req: NextRequest) => {
   if (reminder) {
     const responded = await respondedEmails();
     const before = recipients.length;
-    recipients = recipients.filter((r) => !responded.has(r.to.trim().toLowerCase()));
+    recipients = recipients.filter((r) => !hasResponded(r, responded));
     skipped = before - recipients.length;
   }
   const surveyUrl = `${BASE_URL}/survey/${AUDIENCES[audience].survey}?src=email`;

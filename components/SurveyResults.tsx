@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SURVEYS, SURVEY_TYPES, type SurveyQuestion, type SurveyType } from '@/lib/surveys';
+import SurveyContacts from './SurveyContacts';
 
 interface SurveyRow {
   id: string;
@@ -16,7 +17,7 @@ interface SurveyRow {
 }
 
 interface InviteAudience {
-  audience: 'winner' | 'competitor' | 'spectator' | 'volunteer';
+  audience: 'winner' | 'competitor' | 'spectator' | 'volunteer' | 'sponsor' | 'vendor';
   recipients: number;
   responded: number;
   lastSentAt: string | null;
@@ -439,7 +440,7 @@ export default function SurveyResults({ token }: { token: string }) {
           <p className="text-xs text-text-muted mt-3">
             Winners: top 3 per division from final results, sent the winner survey (competitor questions + prizes) instead of the
             competitor one. Competitors and winners also go to the parent email for minors. Volunteers: confirmed only.
-            Spectators: everyone who RSVP&apos;d. Duplicate addresses get one email.
+            Spectators: everyone who RSVP&apos;d. Sponsors and vendors: the contact list below. Duplicate addresses get one email.
             TEST sends that group&apos;s exact email to the organizer inbox (dmvthrowers@gmail.com) and doesn&apos;t count as sending.
             REMIND sends a short &ldquo;still time&rdquo; follow-up once the invite has gone out. It skips anyone who answered and left
             their email; answers are otherwise anonymous, so the email tells people who already answered to ignore it.
@@ -456,6 +457,7 @@ export default function SurveyResults({ token }: { token: string }) {
               </ul>
             </details>
           )}
+          <SurveyContacts token={token} onChange={() => void fetchData()} />
         </div>
       </section>
 
